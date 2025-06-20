@@ -4,7 +4,7 @@ import * as path from 'path';
 
 @Injectable()
 export class DataService {
-  private readonly dataDir = path.join(__dirname, '..', '..', 'data');
+  private readonly dataDir = path.join(__dirname, '..', '..', '..', 'data');
 
   private readJson(filePath: string) {
     if (!fs.existsSync(filePath)) {
