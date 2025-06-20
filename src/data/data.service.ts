@@ -22,7 +22,6 @@ export class DataService {
     }
   }
 
-  // 🔹 Get ALL navdata FIR directories
   getAllNavdata(): string[] {
     const navdataPath = path.join(this.dataDir, 'navdata');
     return fs.readdirSync(navdataPath).filter(f =>
@@ -30,7 +29,6 @@ export class DataService {
     );
   }
 
-  // 🔹 Get waypoints (VFR & IFR) — for specific FIR or all
   getWaypoints(firIcao?: string) {
     const navdataPath = path.join(this.dataDir, 'navdata');
 
@@ -52,7 +50,6 @@ export class DataService {
     return firIcao ? result[0] : result;
   }
 
-  // 🔹 Get all aerodromes (optionally scoped to one FIR)
   getAllAd(firIcao?: string) {
     const navdataPath = path.join(this.dataDir, 'navdata');
 
@@ -71,7 +68,6 @@ export class DataService {
     return aerodromes;
   }
 
-  // 🔹 Get a specific aerodrome by ICAO (searches all FIRs)
   getAdData(icaoCode: string) {
     const allAd = this.getAllAd();
     const ad = allAd.find((a: any) => a.icao.toUpperCase() === icaoCode.toUpperCase());
@@ -79,7 +75,6 @@ export class DataService {
     return ad;
   }
 
-  // 🔹 Get all aircraft types (just file names)
   getAllAircraftData(): string[] {
     const aircraftDir = path.join(this.dataDir, 'aircraft');
     return fs.readdirSync(aircraftDir)
@@ -87,7 +82,6 @@ export class DataService {
       .map(file => path.basename(file, '.json'));
   }
 
-  // 🔹 Get a specific aircraft data file
   getAircraftData(id: string) {
     const filePath = path.join(this.dataDir, 'aircraft', `${id}.json`);
     const data = this.readJson(filePath);
