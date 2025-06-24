@@ -1,10 +1,12 @@
 import { Controller, Get, Param } from "@nestjs/common";
 import { DataService } from "./data.service";
+import { PrismaService } from "src/prisma/prisma.service";
 
 @Controller('data')
 export class DataController {
     constructor(
-        private dataService: DataService
+        private dataService: DataService,
+        private prisma: PrismaService
     ) { }
 
     @Get('nav')

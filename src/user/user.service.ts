@@ -18,7 +18,11 @@ export class UserService {
         const user = await this.prisma.user.findUnique({
             where: { id },
             include: {
-                logbookEntries: true,
+                logbookEntries: {
+                    include: {
+                        plan: true,
+                    }
+                }
             },
         });
         if (!user) {
@@ -33,7 +37,11 @@ export class UserService {
         const user = await this.prisma.user.findUnique({
             where: { username },
             include: {
-                logbookEntries: true,
+                logbookEntries: {
+                    include: {
+                        plan: true,
+                    }
+                }
             },
         });
 
@@ -49,7 +57,11 @@ export class UserService {
         const user = await this.prisma.user.findUnique({
             where: { email },
             include: {
-                logbookEntries: true,
+                logbookEntries: {
+                    include: {
+                        plan: true,
+                    }
+                }
             },
         });
 
@@ -68,10 +80,10 @@ export class UserService {
             orderBy: { createdAt: 'asc' },
             include: {
                 user: true,
+                plan: true,
             }
         });
 
-        // Ensure to remove sensitive data like passwordHash
         return logbook.map(entry => {
             const { passwordHash, ...rest } = entry.user;
             return {

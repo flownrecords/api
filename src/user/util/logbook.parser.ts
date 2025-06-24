@@ -2,6 +2,7 @@ import { Readable } from "stream";
 import { Request } from "express";
 
 import * as csv from "csv-parser";
+import { FlightPlan } from "@prisma/client";
 
 export const csvFilter = (req: Request, file, callback) => {
     if (!file.originalname.match(/\.(csv)$/)) {
@@ -78,7 +79,8 @@ export const parseEntry = (data: any, userId: number, fileSource: string) => {
             landNight: parseInt(data.landings_night, 10) || 0,
             includeInFt: data?.include_in_ftl ? data.include_in_ftl?.toLowerCase() === 'true' : false,
             rmks: data.remarks_and_endorsements || null,
-            flightTrack: [],
+            recording: [],
+            plan: {}
         }
 
         if((parsed.unique.match(/undefined/g) || []).length > 1) {

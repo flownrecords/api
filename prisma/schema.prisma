@@ -105,9 +105,32 @@ model LogbookEntries {
 
   rmks String?
 
-  flightTrack Json[]
+  recording Json[] @default([])
 
+  plan        FlightPlan? @relation("EntryFlightPlan")
+  
   @@map("logbook")
+}
+
+model FlightPlan {
+  id          Int      @id @default(autoincrement())
+  depAd       String  // Departure airport ICAO
+  arrAd       String  // Arrival airport ICAO
+  route       String?  // e.g., "LPPT DCT POVEL UN741 FERNA LEMD"
+  alternate   String?  // Alternate airport ICAO
+  cruiseLevel String?  // e.g., "FL120"
+  cruiseSpeed String?  // e.g., "120KTAS"
+  fuelPlan    Decimal? // Planned fuel in kg or lbs
+  etd         DateTime? // Estimated Time of Departure
+  eta         DateTime? // Estimated Time of Arrival
+  remarks     String?  // Free text
+  weather     Json?    // Could be METAR/TAF or forecast snapshot
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  logbookEntryId Int       @unique
+  logbookEntry   LogbookEntries @relation("EntryFlightPlan", fields: [logbookEntryId], references: [id])
 }
 
 model Organization {
