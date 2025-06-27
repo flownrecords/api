@@ -36,6 +36,13 @@ export class UserController {
     }
 
     @HttpCode(HttpStatus.OK)
+    @Post('logbook/edit')
+    editLogbookEntry(@GetUser() user: User, @Body() body) {
+        const { entryId, entryData } = body;
+        return this.userService.editLogbookEntry(user.id, entryId, entryData);
+    }
+
+    @HttpCode(HttpStatus.OK)
     @Post('logbook/delete')
     deleteLogbookEntries(@GetUser() user: User, @Body() body) {
         const { entryIds } = body;
@@ -45,5 +52,10 @@ export class UserController {
     @Get(':username')
     getUserByUsername(@Req() req) {
         return this.userService.getUserByUsername(req.params?.username);
+    }
+
+    @Get('id/:id')
+    getUserById(@Req() req) {
+        return this.userService.getUserById(Number(req.params?.id));
     }
 }

@@ -93,6 +93,32 @@ export class UserService {
         });
     }
 
+    async editLogbookEntry(userId: number, entryId: number, entryData: any) {
+        if (!entryId || !entryData) {
+            throw new Error('Entry ID and data are required');
+        }
+
+        const existingEntry = await this.prisma.logbookEntries.findUnique({
+            where: { id: entryId, userId },
+        });
+
+        if (!existingEntry) {
+            throw new Error('Logbook entry not found');
+        }
+
+        const updatedEntry = await this.prisma.logbookEntries.update({
+            where: { id: entryId },
+            data: {
+                ...entryData,
+                user: {
+                    connect: { id: userId },
+                }
+            },
+        });
+
+        return updatedEntry;
+    }
+
     async updateLogbook(userId: number, fileSource: string, file: any) {
         if (!fileSource) {
             throw new Error('File source is required');
