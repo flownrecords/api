@@ -30,7 +30,8 @@ export class JwtStrategy extends PassportStrategy(
     sub: number;
     email: string;
   }) {
-    const user =
+    try {
+      const user =
       await this.prisma.user.findUnique({
         where: {
           id: payload.sub,
@@ -39,13 +40,17 @@ export class JwtStrategy extends PassportStrategy(
           logbookEntries: true,
         },
       });
-    
-    if (!user) {
+
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      const { passwordHash, ...userWithoutPassword } = user;
+
+      return userWithoutPassword;
+    } catch(e) {
+      console.error('Error fetching user:', e);
       throw new Error('User not found');
     }
-
-    const { passwordHash, ...userWithoutPassword } = user;
-
-    return userWithoutPassword;
   }
 }

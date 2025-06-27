@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { parseCsv } from './util';
-import { LogbookEntries } from '@prisma/client';
+import { LogbookEntry } from '@prisma/client';
 
 @Injectable()
 export class UserService {
@@ -15,6 +15,10 @@ export class UserService {
     }
 
     async getUserById(id: number) {
+        if (!id) {
+            throw new Error('User ID is required');
+        }
+
         const user = await this.prisma.user.findUnique({
             where: { id },
             include: {
@@ -74,7 +78,7 @@ export class UserService {
     }
 
     async getLogbook(userId: number) {
-        const logbook = await this.prisma.logbookEntries
+        const logbook = await this.prisma.logbookEntry
         .findMany({
             where: { userId },
             orderBy: { createdAt: 'asc' },
@@ -98,7 +102,7 @@ export class UserService {
             throw new Error('Entry ID and data are required');
         }
 
-        const existingEntry = await this.prisma.logbookEntries.findUnique({
+        const existingEntry = await this.prisma.logbookEntry.findUnique({
             where: { id: entryId, userId },
         });
 
@@ -106,7 +110,7 @@ export class UserService {
             throw new Error('Logbook entry not found');
         }
 
-        const updatedEntry = await this.prisma.logbookEntries.update({
+        const updatedEntry = await this.prisma.logbookEntry.update({
             where: { id: entryId },
             data: {
                 ...entryData,
@@ -136,14 +140,17 @@ export class UserService {
         }
 
         // Add each entry to the database but ensure to handle duplicates
-        const responses: LogbookEntries[] = []
+        const responses: LogbookEntry[] = []
         for (const entry of parsed) {
             try {
-                let response = await this.prisma.logbookEntries.create({
+                let response = await this.prisma.logbookEntry.create({
                     data: {
                         ...entry,
                         user: {
                             connect: { id: userId },
+                        },
+                        crew: {
+                            connect: []
                         }
                     },
                 })
@@ -165,12 +172,13 @@ export class UserService {
         return responses;
     }
 
+
     async deleteLogbookEntries(userId: number, entryIds: number[]) {
         if (!entryIds?.length) {
             throw new Error('No entry IDs provided');
         }
 
-        const deletedEntries = await this.prisma.logbookEntries.deleteMany({
+        const deletedEntries = await this.prisma.logbookEntry.deleteMany({
             where: {
             id: { in: entryIds },
             userId,

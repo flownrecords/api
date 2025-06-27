@@ -3,6 +3,15 @@ import { Request } from 'express';
 
 @Controller('gen')
 export class GeneralController {
+    constructor() {}
+
+    @Get('/')
+    getIndex() {
+        return {
+            status: 'OK',
+        };
+    }
+
     @Get('/wx/:ad') 
     getWx(@Req() req: Request) {
         const ad = req.params.ad;

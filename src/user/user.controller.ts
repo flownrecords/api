@@ -13,6 +13,11 @@ export class UserController {
         private userService: UserService
     ) {}
 
+    @Get()
+    healthCheck() {
+        return { status: 'OK' };
+    }
+
     @Get('me')
     getMe(@GetUser() user: User) {
         return user;
@@ -56,6 +61,6 @@ export class UserController {
 
     @Get('id/:id')
     getUserById(@Req() req) {
-        return this.userService.getUserById(Number(req.params?.id));
+        return this.userService.getUserById(req.params?.id);
     }
 }

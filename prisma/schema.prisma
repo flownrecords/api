@@ -1,81 +1,54 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "postgres"
   url      = env("DATABASE_URL")
 }
 
 model User {
-  // User identification
-  id       Int    @id @default(autoincrement())
-  email    String @unique
-  username String @unique
-  phone    String? @unique
+  id           Int    @id @default(autoincrement())
+  email        String @unique
+  username     String @unique
+  passwordHash String
 
-  // User authentication
-  passwordHash       String
-  emailVerified      Boolean   @default(false)
-  lastLogin          DateTime?
+  lastLogin DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  birthday  DateTime?
 
-  // User metadata
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
   firstName         String?
   lastName          String?
   profilePictureUrl String?
   bio               String?
-  location         String?
-  birthday         DateTime?
-  homeAirport      String?
+  location          String?
+  homeAirport       String?
 
-  // User orgnization
-  organizationId String?
-  organizationRole           UserOrganizationRole @default(GUEST) // Possible values: GUEST / STUDENT / INSTRUCTOR / SUPERVISOR / ADMIN
-  organizationJoinedAt       DateTime?
-  orgMemberVerifiedAt     Boolean @default(false)
+  permissions UserPermission[] // Removed default ([USER])
 
-  // User preferences
-  theme                Theme? @default(DARK)
-  language             String? @default("en")
-  publicProfile        Boolean @default(true)
+  organizationId       String?
+  organizationRole     UserOrganizationRole @default(GUEST)
+  organizationJoinedAt DateTime?
 
-  // Extras
-  disabled Boolean @default(false)
-  admin    Boolean @default(false)
+  language      String  @default("EN")
+  publicProfile Boolean @default(true)
+  disabled      Boolean @default(false)
 
-  // Logbook
-  logbookEntries LogbookEntries[]  @relation("UserLogbook") 
-
-  @@map("users")
+  logbookEntries LogbookEntry[] @relation("EntryAuthor")
+  crewForEntries LogbookEntry[] @relation("EntryCrew")
+  organization   Organization?  @relation(fields: [organizationId], references: [id])
 }
 
-model LogbookEntries {
-  // Logbook entry identification
-  id      Int   @id @default(autoincrement())
-  unique String @unique
-  pilotId Int?
-  
-  userId Int
-  user   User @relation("UserLogbook", fields: [userId], references: [id])
-  crewId  Int[]
-
-  // Logbook entry metadata
+model LogbookEntry {
+  id        Int      @id @default(autoincrement())
+  unique    String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Flight data
-  date  DateTime?
-  depAd String?
-  arrAd String?
-
+  date     DateTime?
+  depAd    String?
+  arrAd    String?
   offBlock DateTime?
   onBlock  DateTime?
 
@@ -83,84 +56,82 @@ model LogbookEntries {
   aircraftRegistration String?
   picName              String?
 
-  total             Decimal?
-  dayTime           Decimal?
-  nightTime         Decimal?
-  sepVfr            Decimal?
-  sepIfr            Decimal?
-  meVfr             Decimal?
-  meIfr             Decimal?
-  picTime           Decimal?
-  copilotTime       Decimal?
-  multiPilotTime    Decimal?
-  instructorTime    Decimal?
-  dualTime          Decimal?
-  simTime           Decimal?
-  simInstructorTime Decimal?
+  total             Float   @default(0)
+  dayTime           Float   @default(0)
+  nightTime         Float   @default(0)
+  sepVfr            Float   @default(0)
+  sepIfr            Float   @default(0)
+  meVfr             Float   @default(0)
+  meIfr             Float   @default(0)
+  picTime           Float   @default(0)
+  copilotTime       Float   @default(0)
+  multiPilotTime    Float   @default(0)
+  instructorTime    Float   @default(0)
+  dualTime          Float   @default(0)
+  simTime           Float   @default(0)
+  simInstructorTime Float   @default(0)
+  landDay           Int     @default(0)
+  landNight         Int     @default(0)
+  includeInFt       Boolean @default(true)
+  remarks           String?
 
-  landDay   Int?
-  landNight Int?
+  userId Int
+  user   User   @relation("EntryAuthor", fields: [userId], references: [id])
+  crew   User[] @relation("EntryCrew")
 
-  includeInFt Boolean @default(true)
-
-  rmks String?
-
-  recording Json[] @default([])
-
-  plan        FlightPlan? @relation("EntryFlightPlan")
-  
-  @@map("logbook")
+  plan      FlightPlan?
+  recording FlightRecording?
 }
 
 model FlightPlan {
-  id          Int      @id @default(autoincrement())
-  depAd       String  // Departure airport ICAO
-  arrAd       String  // Arrival airport ICAO
-  route       String?  // e.g., "LPPT DCT POVEL UN741 FERNA LEMD"
-  alternate   String?  // Alternate airport ICAO
-  cruiseLevel String?  // e.g., "FL120"
-  cruiseSpeed String?  // e.g., "120KTAS"
-  fuelPlan    Decimal? // Planned fuel in kg or lbs
-  etd         DateTime? // Estimated Time of Departure
-  eta         DateTime? // Estimated Time of Arrival
-  remarks     String?  // Free text
-  weather     Json?    // Could be METAR/TAF or forecast snapshot
+  id          Int       @id @default(autoincrement())
+  depAd       String
+  arrAd       String
+  route       String?
+  alternate   String?
+  cruiseLevel String?
+  cruiseSpeed String?
+  fuelPlan    Float?
+  etd         DateTime?
+  eta         DateTime?
+  remarks     String?
+  weather     Json?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  logbookEntryId Int          @unique
+  logbookEntry   LogbookEntry @relation(fields: [logbookEntryId], references: [id])
+}
 
-  logbookEntryId Int       @unique
-  logbookEntry   LogbookEntries @relation("EntryFlightPlan", fields: [logbookEntryId], references: [id])
+model FlightRecording {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  fileName String
+  data     Json
+
+  logbookEntryId Int          @unique
+  logbookEntry   LogbookEntry @relation(fields: [logbookEntryId], references: [id])
 }
 
 model Organization {
-  // Organization identification
-  id     Int              @id @default(autoincrement())
-  name   String           @unique
-  handle String           @unique
-  type   OrganizationType @default(SCHOOL) // Possible values: SCHOOL / COMPANY / COMMUNITY / CLUB / OTHER
-
-  // Organization metadata
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id           String           @id
+  name         String           @unique
+  handle       String           @unique
+  type         OrganizationType @default(SCHOOL)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
   description  String?
   logoUrl      String?
   websiteUrl   String?
   contactEmail String?
   address      String?
   phoneNumber  String?
+  public       Boolean          @default(true)
+  archived     Boolean          @default(false)
 
-  // Organization members
-  membersId Int[]
-  adminsId  Int[]
-
-  // Organization settings
-  public Boolean @default(true)
-
-  // Extras
-  archived Boolean @default(false)
-
-  @@map("organizations")
+  members User[]
 }
 
 enum OrganizationType {
@@ -175,20 +146,22 @@ enum UserOrganizationRole {
   GUEST
   STUDENT
   PILOT
-  CFI // Chief Flight Instructor
-  CTKI // Chief Theoretical Knowledge Instructor
-  SM // Safety Manager
-  OPS // Operations
-  FI // Flight Instructor
-  TKI // Theoretical Knowledge Instructor
-  MAIN // Maintenance
-  OFFICE // Office Staff
-  SUPERVISOR // Supervisor
-  ADMIN // Administrator
-  OTHER 
+  OPS
+  FI
+  TKI
+  MAIN
+  OFFICE
+  SUPERVISOR
+  ADMIN
+  OTHER
 }
 
-enum Theme {
-  LIGHT
-  DARK
+enum UserPermission {
+  USER
+  SUPPORT
+  QUESTIONS_MANAGER
+  FPL_MANAGER
+  LOGBOOK_MANAGER
+  MANAGER
+  ADMIN
 }

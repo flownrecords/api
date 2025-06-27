@@ -58,7 +58,7 @@ export class AuthService {
     const inputName = dto.name || dto.username;
     const nameParts = inputName.split(' ');
     const firstName = nameParts[0] || undefined;
-    const lastName = nameParts[nameParts.length - 1] || undefined;
+    const lastName = (nameParts.length > 1 && nameParts[nameParts.length - 1]) ? nameParts[nameParts.length - 1] : undefined;
 
     try {
       const user = await this.prisma.user.create({
@@ -75,13 +75,18 @@ export class AuthService {
 
        return this.signToken(user.id, user.email);
     } catch (e) {
+
       if (e instanceof PrismaClientKnownRequestError) {
         if (e.code === 'P2002') {
           throw new ForbiddenException('Credentials taken');
         }
       }
 
-      throw e;
+      console.error(e)
+
+      return {
+        accessToken: null,
+      }
 
     }
   }

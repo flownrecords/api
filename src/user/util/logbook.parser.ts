@@ -2,7 +2,6 @@ import { Readable } from "stream";
 import { Request } from "express";
 
 import * as csv from "csv-parser";
-import { FlightPlan } from "@prisma/client";
 
 export const csvFilter = (req: Request, file, callback) => {
     if (!file.originalname.match(/\.(csv)$/)) {
@@ -47,19 +46,18 @@ export const parseEntry = (data: any, userId: number, fileSource: string) => {
     if(fileSource.toUpperCase() === 'FLIGHTLOGGER') {
         const parsed = {
             unique: `${userId}-${data.date}-${data.off_block}-${data.departure_airport_name}-${data.type_of_aircraft}-${data.registration}`,
-            pilotId: userId,
-            crewId: [],
             createdAt: new Date(),
             updatedAt: new Date(),
-            date: combineDateAndTime(data.date, data.off_block) || parseDate(data.date) || null,
-            depAd: data.departure_airport_name || 'ZZZZ',
-            arrAd: data.arrival_airport_name || 'ZZZZ',
 
+            date: combineDateAndTime(data.date, data.off_block) || parseDate(data.date) || null,
+            depAd: data.departure_airport_name || null,
+            arrAd: data.arrival_airport_name || null,
             offBlock: combineDateAndTime(data.date, data.off_block) || null,
             onBlock: combineDateAndTime(data.date, data.on_block) || null,
-            aircraftType: data.type_of_aircraft || 'ZZZZ',
-            aircraftRegistration: data.registration || undefined,
-            picName: data.name_of_pilot_in_command,
+
+            aircraftType: data.type_of_aircraft || null,
+            aircraftRegistration: data.registration || null,
+            picName: data.name_of_pilot_in_command || null,
 
             total: parseTime(data.total),
             dayTime: parseTime(data.day),
@@ -75,11 +73,14 @@ export const parseEntry = (data: any, userId: number, fileSource: string) => {
             dualTime: parseTime(data.dual),
             simTime: parseTime(data.synthetic_training),
             simInstructorTime: parseTime(data.instructor_synthetic_training),
+
             landDay: parseInt(data.landings_day, 10) || 0,
             landNight: parseInt(data.landings_night, 10) || 0,
+
             includeInFt: data?.include_in_ftl ? data.include_in_ftl?.toLowerCase() === 'true' : false,
-            rmks: data.remarks_and_endorsements || null,
-            recording: [],
+            remarks: data.remarks_and_endorsements || null,
+
+            recording: {},
             plan: {}
         }
 
