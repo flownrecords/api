@@ -54,6 +54,20 @@ export class UserController {
         return this.userService.deleteLogbookEntries(user.id, entryIds);
     }
 
+    @HttpCode(HttpStatus.OK)
+    @Post('logbook/crewAdd')
+    addCrewToLogbookEntry(@GetUser() user: User, @Body() body) {
+        const { entryId, crewUsername } = body;
+        return this.userService.addCrewToLogbookEntry(user.id, entryId, crewUsername);
+    }
+
+    @HttpCode(HttpStatus.OK)
+    @Post('logbook/crewRemove')
+    removeCrewToLogbookEntry(@GetUser() user: User, @Body() body) {
+        const { entryId, crewUsername } = body;
+        return this.userService.removeCrewToLogbookEntry(user.id, entryId, crewUsername);
+    }
+
     @Get(':username')
     getUserByUsername(@Req() req) {
         return this.userService.getUserByUsername(req.params?.username);

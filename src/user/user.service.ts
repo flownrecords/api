@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { parseCsv } from './util';
 import { LogbookEntry } from '@prisma/client';
@@ -25,6 +25,7 @@ export class UserService {
                 logbookEntries: {
                     include: {
                         plan: true,
+                        crew: true,
                     }
                 }
             },
@@ -34,7 +35,7 @@ export class UserService {
         }
 
         const { passwordHash, ...rest } = user;
-        return user;
+        return rest;
     }
 
     async getUserByUsername(username: string) {
@@ -54,7 +55,7 @@ export class UserService {
         }
 
         const { passwordHash, ...rest } = user;
-        return user;
+        return rest;
     }
 
     async getUserByEmail(email: string) {
@@ -74,7 +75,7 @@ export class UserService {
         }
 
         const { passwordHash, ...rest } = user;
-        return user;
+        return rest;
     }
 
     async getLogbook(userId: number) {
@@ -85,6 +86,15 @@ export class UserService {
             include: {
                 user: true,
                 plan: true,
+                crew: {
+                    select: {
+                        id: true,
+                        username: true,
+                        firstName: true,
+                        lastName: true,
+                        profilePictureUrl: true,
+                    },
+                }
             }
         });
 
@@ -172,7 +182,6 @@ export class UserService {
         return responses;
     }
 
-
     async deleteLogbookEntries(userId: number, entryIds: number[]) {
         if (!entryIds?.length) {
             throw new Error('No entry IDs provided');
@@ -192,6 +201,61 @@ export class UserService {
         return {
             message: `${deletedEntries.count} entr${deletedEntries.count > 1 ? 'ies' : 'y'} deleted successfully`,
         };
+    }
+
+    async addCrewToLogbookEntry(userId: number, entryId: number, crewUsername: string | string[]) {
+        const usernames = Array.isArray(crewUsername) ? crewUsername : [crewUsername];
+
+        const crewUsers = await this.prisma.user.findMany({
+            where: {
+                username: { in: usernames },
+            },
+            select: { id: true },
+        });
+
+        if (!crewUsers.length) {
+            throw new NotFoundException('No valid crew members found to add.');
+        }
+
+        const updatedEntry = await this.prisma.logbookEntry.update({
+            where: { id: entryId },
+            data: {
+                crew: {
+                    connect: crewUsers.map(user => ({ id: user.id })),
+                },
+            },
+            include: { crew: true },
+        });
+
+        return updatedEntry;
+    }
+
+    async removeCrewToLogbookEntry(userId: number, entryId: number, crewUsername: string | string[]) {
+        const usernames = Array.isArray(crewUsername) ? crewUsername : [crewUsername];
+
+        const crewUsers = await this.prisma.user.findMany({
+            where: {
+            username: { in: usernames },
+            organizationId: (await this.prisma.user.findUnique({ where: { id: userId } }))?.organizationId,
+            },
+            select: { id: true },
+        });
+
+        if (!crewUsers.length) {
+            throw new NotFoundException('No matching crew members found to remove.');
+        }
+
+        const updatedEntry = await this.prisma.logbookEntry.update({
+            where: { id: entryId },
+            data: {
+            crew: {
+                disconnect: crewUsers.map(user => ({ id: user.id })),
+            },
+            },
+            include: { crew: true },
+        });
+
+        return updatedEntry;
     }
 
 }
