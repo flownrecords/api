@@ -37,7 +37,15 @@ export class JwtStrategy extends PassportStrategy(
           id: payload.sub,
         },
         include: {
-          logbookEntries: true,
+          logbookEntries: {
+            include: {
+              plan: true,
+              recording: true,
+              crew: true,
+            },
+          },
+          crewForEntries: true,
+          organization: true,
         },
       });
 

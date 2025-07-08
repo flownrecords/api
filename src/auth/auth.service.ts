@@ -24,7 +24,14 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({
       where: filter,
       include: {
-        logbookEntries: true,
+        logbookEntries: {
+          include: {
+            plan: true,
+            recording: true,
+          }
+        },
+        crewForEntries: true,
+        organization: true,
       }
     });
 

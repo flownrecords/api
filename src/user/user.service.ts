@@ -27,7 +27,9 @@ export class UserService {
                         plan: true,
                         crew: true,
                     }
-                }
+                },
+                crewForEntries: true,
+                organization: true,
             },
         });
         if (!user) {
@@ -45,8 +47,11 @@ export class UserService {
                 logbookEntries: {
                     include: {
                         plan: true,
+                        crew: true,
                     }
-                }
+                },
+                crewForEntries: true,
+                organization: true,
             },
         });
 
@@ -65,8 +70,11 @@ export class UserService {
                 logbookEntries: {
                     include: {
                         plan: true,
+                        crew: true,
                     }
-                }
+                },
+                crewForEntries: true,
+                organization: true,
             },
         });
 
