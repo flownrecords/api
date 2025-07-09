@@ -8,7 +8,7 @@
     "db:dev:up": "docker compose up -d",
     "db:dev:restart": "npm run db:dev:rm && npm run db:dev:up",
     "build": "nest build",
-    "format": "prettier --config \"../config/.prettierrc\" --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",

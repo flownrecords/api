@@ -1,13 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { parseCsv } from './util';
-import { LogbookEntry } from '@prisma/client';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { PrismaService } from "src/prisma/prisma.service";
+import { parseCsv } from "./util";
+import { LogbookEntry } from "@prisma/client";
 
 @Injectable()
 export class UserService {
-    constructor(
-        private prisma: PrismaService
-    ) {}
+    constructor(private prisma: PrismaService) {}
 
     async getAllUsers() {
         const users = await this.prisma.user.findMany();
@@ -16,7 +14,7 @@ export class UserService {
 
     async getUserById(id: number) {
         if (!id) {
-            throw new Error('User ID is required');
+            throw new Error("User ID is required");
         }
 
         const user = await this.prisma.user.findUnique({
@@ -26,14 +24,14 @@ export class UserService {
                     include: {
                         plan: true,
                         crew: true,
-                    }
+                    },
                 },
                 crewForEntries: true,
                 organization: true,
             },
         });
         if (!user) {
-            throw new Error('User not found');
+            throw new Error("User not found");
         }
 
         const { passwordHash, ...rest } = user;
@@ -48,7 +46,7 @@ export class UserService {
                     include: {
                         plan: true,
                         crew: true,
-                    }
+                    },
                 },
                 crewForEntries: true,
                 organization: true,
@@ -56,7 +54,7 @@ export class UserService {
         });
 
         if (!user) {
-            throw new Error('User not found');
+            throw new Error("User not found");
         }
 
         const { passwordHash, ...rest } = user;
@@ -71,7 +69,7 @@ export class UserService {
                     include: {
                         plan: true,
                         crew: true,
-                    }
+                    },
                 },
                 crewForEntries: true,
                 organization: true,
@@ -79,7 +77,7 @@ export class UserService {
         });
 
         if (!user) {
-            throw new Error('User not found');
+            throw new Error("User not found");
         }
 
         const { passwordHash, ...rest } = user;
@@ -87,10 +85,9 @@ export class UserService {
     }
 
     async getLogbook(userId: number) {
-        const logbook = await this.prisma.logbookEntry
-        .findMany({
+        const logbook = await this.prisma.logbookEntry.findMany({
             where: { userId },
-            orderBy: { createdAt: 'asc' },
+            orderBy: { createdAt: "asc" },
             include: {
                 user: true,
                 plan: true,
@@ -102,11 +99,11 @@ export class UserService {
                         lastName: true,
                         profilePictureUrl: true,
                     },
-                }
-            }
+                },
+            },
         });
 
-        return logbook.map(entry => {
+        return logbook.map((entry) => {
             const { passwordHash, ...rest } = entry.user;
             return {
                 ...entry,
@@ -117,7 +114,7 @@ export class UserService {
 
     async editLogbookEntry(userId: number, entryId: number, entryData: any) {
         if (!entryId || !entryData) {
-            throw new Error('Entry ID and data are required');
+            throw new Error("Entry ID and data are required");
         }
 
         const existingEntry = await this.prisma.logbookEntry.findUnique({
@@ -125,7 +122,7 @@ export class UserService {
         });
 
         if (!existingEntry) {
-            throw new Error('Logbook entry not found');
+            throw new Error("Logbook entry not found");
         }
 
         const updatedEntry = await this.prisma.logbookEntry.update({
@@ -134,7 +131,7 @@ export class UserService {
                 ...entryData,
                 user: {
                     connect: { id: userId },
-                }
+                },
             },
         });
 
@@ -143,71 +140,71 @@ export class UserService {
 
     async updateLogbook(userId: number, fileSource: string, file: any) {
         if (!fileSource) {
-            throw new Error('File source is required');
+            throw new Error("File source is required");
         }
 
         const buffer = file?.buffer;
-        if(!buffer) {
-            throw new Error('No file data provided');
+        if (!buffer) {
+            throw new Error("No file data provided");
         }
 
         let parsed = await parseCsv(buffer, userId, fileSource);
 
         if (!Array.isArray(parsed) || parsed.length === 0) {
-            throw new Error('No valid logbook entries found in the file');
+            throw new Error("No valid logbook entries found in the file");
         }
 
         // Add each entry to the database but ensure to handle duplicates
-        const responses: LogbookEntry[] = []
+        const responses: LogbookEntry[] = [];
         for (const entry of parsed) {
             try {
-                let response = await this.prisma.logbookEntry.create({
-                    data: {
-                        ...entry,
-                        user: {
-                            connect: { id: userId },
+                let response = await this.prisma.logbookEntry
+                    .create({
+                        data: {
+                            ...entry,
+                            user: {
+                                connect: { id: userId },
+                            },
+                            crew: {
+                                connect: [],
+                            },
                         },
-                        crew: {
-                            connect: []
+                    })
+                    .catch((e) => {
+                        if (e.code !== "P2002") {
+                            console.error("Error inserting logbook entry:", e);
                         }
-                    },
-                })
-                .catch((e) => {
-                    if (e.code !== 'P2002') {
-                        console.error('Error inserting logbook entry:', e);
-                    }
-                });
+                    });
                 if (response) {
                     responses.push(response);
                 }
             } catch (error) {
                 // Handle duplicate entries or other errors gracefully
-                console.error('Error inserting logbook entry:', error);
+                console.error("Error inserting logbook entry:", error);
             }
         }
-
 
         return responses;
     }
 
     async deleteLogbookEntries(userId: number, entryIds: number[]) {
         if (!entryIds?.length) {
-            throw new Error('No entry IDs provided');
+            throw new Error("No entry IDs provided");
         }
 
         const deletedEntries = await this.prisma.logbookEntry.deleteMany({
             where: {
-            id: { in: entryIds },
-            userId,
+                id: { in: entryIds },
+                userId,
             },
         });
 
         if (deletedEntries.count === 0) {
-            throw new Error('No entries found to delete');
+            throw new Error("No entries found to delete");
         }
 
         return {
-            message: `${deletedEntries.count} entr${deletedEntries.count > 1 ? 'ies' : 'y'} deleted successfully`,
+            message: `${deletedEntries.count} entr${deletedEntries.count > 1 ? "ies" : "y"} deleted successfully`,
         };
     }
 
@@ -222,14 +219,14 @@ export class UserService {
         });
 
         if (!crewUsers.length) {
-            throw new NotFoundException('No valid crew members found to add.');
+            throw new NotFoundException("No valid crew members found to add.");
         }
 
         const updatedEntry = await this.prisma.logbookEntry.update({
             where: { id: entryId },
             data: {
                 crew: {
-                    connect: crewUsers.map(user => ({ id: user.id })),
+                    connect: crewUsers.map((user) => ({ id: user.id })),
                 },
             },
             include: { crew: true },
@@ -238,32 +235,36 @@ export class UserService {
         return updatedEntry;
     }
 
-    async removeCrewToLogbookEntry(userId: number, entryId: number, crewUsername: string | string[]) {
+    async removeCrewToLogbookEntry(
+        userId: number,
+        entryId: number,
+        crewUsername: string | string[],
+    ) {
         const usernames = Array.isArray(crewUsername) ? crewUsername : [crewUsername];
 
         const crewUsers = await this.prisma.user.findMany({
             where: {
-            username: { in: usernames },
-            organizationId: (await this.prisma.user.findUnique({ where: { id: userId } }))?.organizationId,
+                username: { in: usernames },
+                organizationId: (await this.prisma.user.findUnique({ where: { id: userId } }))
+                    ?.organizationId,
             },
             select: { id: true },
         });
 
         if (!crewUsers.length) {
-            throw new NotFoundException('No matching crew members found to remove.');
+            throw new NotFoundException("No matching crew members found to remove.");
         }
 
         const updatedEntry = await this.prisma.logbookEntry.update({
             where: { id: entryId },
             data: {
-            crew: {
-                disconnect: crewUsers.map(user => ({ id: user.id })),
-            },
+                crew: {
+                    disconnect: crewUsers.map((user) => ({ id: user.id })),
+                },
             },
             include: { crew: true },
         });
 
         return updatedEntry;
     }
-
 }

@@ -1,35 +1,36 @@
-import { Controller, Get, Req } from '@nestjs/common';
-import { Request } from 'express';
+import { Controller, Get, Req } from "@nestjs/common";
+import { Request } from "express";
 
-@Controller('gen')
+@Controller("")
 export class GeneralController {
     constructor() {}
 
-    @Get('/')
+    @Get("/")
     getIndex() {
         return {
-            status: 'OK',
+            status: "OK",
         };
     }
 
-    @Get('/wx/:ad') 
+    @Get("/wx/:ad")
     getWx(@Req() req: Request) {
         const ad = req.params.ad;
         const raw = fetch(`
             https://aviationweather.gov/api/data/metar?ids=${ad}&format=json&taf=true
         `);
 
-        return raw.then(response => response.json())
-            .then(data => {
+        return raw
+            .then((response) => response.json())
+            .then((data) => {
                 return {
-                    status: 'success',
-                    data: data?.[0]
+                    status: "success",
+                    data: data?.[0],
                 };
             })
-            .catch(error => {
+            .catch((error) => {
                 return {
-                    status: 'error',
-                    message: error.message
+                    status: "error",
+                    message: error.message,
                 };
             });
     }
