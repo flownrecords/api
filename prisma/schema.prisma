@@ -99,8 +99,8 @@ model FlightPlan {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  logbookEntryId Int          @unique
-  logbookEntry   LogbookEntry @relation(fields: [logbookEntryId], references: [id])
+  logbookEntryId Int?          @unique
+  logbookEntry   LogbookEntry? @relation(fields: [logbookEntryId], references: [id])
 }
 
 model FlightRecording {
