@@ -71,7 +71,7 @@ export class AuthService {
                 ? nameParts[nameParts.length - 1]
                 : undefined;
 
-        const profilePictureUrl = `https://placehold.co/512x512?text=${firstName?.charAt(0) || ""}${lastName?.charAt(0) || ""}`;
+        const profilePictureUrl = `https://placehold.co/512/09090B/313ED8?font=roboto&text=${firstName?.charAt(0) || ""}${lastName?.charAt(0) || ""}`;
 
         try {
             const user = await this.prisma.user.create({
