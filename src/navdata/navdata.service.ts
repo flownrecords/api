@@ -73,8 +73,8 @@ export class NavDataService {
 
     getAdData(icaoCode: string) {
         const firs = fs
-        .readdirSync(this.navdataPath)
-        .filter((f) => fs.statSync(path.join(this.navdataPath, f)).isDirectory());
+            .readdirSync(this.navdataPath)
+            .filter((f) => fs.statSync(path.join(this.navdataPath, f)).isDirectory());
 
         for (const fir of firs) {
             const adData = this.safeReadJson(path.join(this.navdataPath, fir, "ad.json"));

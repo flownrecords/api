@@ -192,6 +192,15 @@ export class UserService {
             throw new Error("No entry IDs provided");
         }
 
+        await this.prisma.flightPlan.updateMany({
+            where: {
+            logbookEntryId: { in: entryIds },
+            },
+            data: {
+                logbookEntryId: undefined,
+            },
+        });
+
         const deletedEntries = await this.prisma.logbookEntry.deleteMany({
             where: {
                 id: { in: entryIds },
