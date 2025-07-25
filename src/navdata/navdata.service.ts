@@ -41,7 +41,7 @@ export class NavDataService {
                   .readdirSync(this.navdataPath)
                   .filter((f) => fs.statSync(path.join(this.navdataPath, f)).isDirectory());
 
-        const firsData = firsList.map((fir) => {
+        const firsData: FIR[] = firsList.map((fir) => {
             const includeAll = !select || Object.keys(select).length === 0 || select.all;
 
             const includeVFR = includeAll || select?.waypoints?.all || select?.waypoints?.vfr;
@@ -51,6 +51,7 @@ export class NavDataService {
 
             return {
                 fir,
+                info: this.safeReadJson(path.join(this.navdataPath, fir, "info.json")),
                 waypoints: {
                     vfr: includeVFR
                         ? this.safeReadJson(path.join(this.navdataPath, fir, "vfr_wpts.json"))
