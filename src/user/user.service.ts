@@ -84,6 +84,19 @@ export class UserService {
         return rest;
     }
 
+    async updateUser(id: number, userData: any) {
+        if (!id || !userData) {
+            throw new Error("User ID and data are required");
+        }
+
+        const updatedUser = await this.prisma.user.update({
+            where: { id },
+            data: userData,
+        });
+
+        return updatedUser;
+    }
+
     async getLogbook(userId: number) {
         const logbook = await this.prisma.logbookEntry.findMany({
             where: { userId },
@@ -98,6 +111,9 @@ export class UserService {
                         firstName: true,
                         lastName: true,
                         profilePictureUrl: true,
+                        organizationId: true,
+                        location: true,
+                        bio: true,
                     },
                 },
             },

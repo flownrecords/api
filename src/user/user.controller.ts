@@ -32,6 +32,12 @@ export class UserController {
         return user;
     }
 
+    @HttpCode(HttpStatus.OK)
+    @Post("me")
+    updateMe(@GetUser() user: User, @Body() payload) {
+        return this.userService.updateUser(user.id, payload);
+    }   
+
     @Get("all")
     getAllUsers() {
         return this.userService.getAllUsers();
