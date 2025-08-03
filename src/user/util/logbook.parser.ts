@@ -45,7 +45,7 @@ export const parseEntry = (data: any, userId: number, fileSource: string) => {
 
     if (fileSource.toUpperCase() === "FLIGHTLOGGER") {
         const parsed = {
-            unique: `${userId}-${data.date}-${data.off_block}-${data.departure_airport_name}-${data.type_of_aircraft}-${data.registration}`,
+            unique: parseUnique(userId, data),
             createdAt: new Date(),
             updatedAt: new Date(),
 
@@ -93,6 +93,10 @@ export const parseEntry = (data: any, userId: number, fileSource: string) => {
         return parsed;
     }
 };
+
+export const parseUnique = (userId: number, data: any) => {
+    return `${userId}-${data.date}-${data.off_block}-${data.departure_airport_name}-${data.type_of_aircraft}-${data.registration}`;
+}
 
 export const parseTime = (timeString: string): number => {
     if (!timeString || typeof timeString !== "string") {

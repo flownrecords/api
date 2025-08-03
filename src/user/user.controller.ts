@@ -56,6 +56,12 @@ export class UserController {
     }
 
     @HttpCode(HttpStatus.OK)
+    @Post("logbook/add")
+    addLogbookEntry(@GetUser() user: User, @Body() body) {
+        return this.userService.addLogbookEntry(user.id, body);
+    }
+
+    @HttpCode(HttpStatus.OK)
     @Post("logbook/edit")
     editLogbookEntry(@GetUser() user: User, @Body() body) {
         const { entryId, entryData } = body;

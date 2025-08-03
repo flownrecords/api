@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
-import { parseCsv } from "./util";
+import { parseCsv, parseUnique } from "./util";
 import { LogbookEntry } from "@prisma/client";
 
 @Injectable()
@@ -112,8 +112,11 @@ export class UserService {
                         lastName: true,
                         profilePictureUrl: true,
                         organizationId: true,
+                        organizationRole: true,
+                        organization: true,
                         location: true,
                         bio: true,
+                        publicProfile: true
                     },
                 },
             },
@@ -201,6 +204,46 @@ export class UserService {
         }
 
         return responses;
+    }
+
+    async addLogbookEntry(userId: number, entryData: any) {
+
+        if (!userId) {
+            throw new Error("User ID is required");
+        }
+
+        if (!entryData) {
+            throw new Error("Entry data is required");
+        }
+
+        const newEntry = await this.prisma.logbookEntry.create({
+            data: {
+                unique: parseUnique(userId, entryData),
+                ...entryData,
+                user: {
+                    connect: { id: userId },
+                },
+                crew: {
+                    connect: [
+                        ...(entryData.crew || [])
+                        .map((crewMember: any) => ({
+                            id: crewMember.id,
+                        })),
+                    ].filter((c) => c.id),
+                },
+            },
+            include: {
+                user: true,
+                plan: true,
+                crew: true,
+            },
+        });
+
+        const { passwordHash, ...rest } = newEntry.user;
+        return {
+            ...newEntry,
+            user: rest,
+        };
     }
 
     async deleteLogbookEntries(userId: number, entryIds: number[]) {
