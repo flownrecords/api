@@ -9,6 +9,7 @@ import { NavDataModule } from "./navdata/navdata.module";
 import { WxController } from "./wx/wx.controller";
 import { WxService } from "./wx/wx.service";
 import { WxModule } from "./wx/wx.module";
+import { FlightDataModule } from "./flight-data/flight-data.module";
 
 @Module({
     imports: [
@@ -21,6 +22,7 @@ import { WxModule } from "./wx/wx.module";
         GeneralModule,
         NavDataModule,
         WxModule,
+        FlightDataModule,
     ],
     controllers: [WxController],
     providers: [WxService],
