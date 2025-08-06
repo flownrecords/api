@@ -2,29 +2,106 @@ import { Readable } from "stream";
 import { Request } from "express";
 
 import * as csv from "csv-parser";
+import { uploadConfig } from "../../config/upload.config";
 
 export const csvFilter = (req: Request, file, callback) => {
     if (!file.originalname.match(/\.(csv)$/)) {
         return callback(new Error("Only CSV files are allowed!"), false);
     }
+
+    // Check file size
+    if (file.size > uploadConfig.maxCsvFileSize) {
+        return callback(
+            new Error(
+                `CSV file size exceeds maximum limit of ${uploadConfig.maxCsvFileSize / (1024 * 1024)}MB`,
+            ),
+            false,
+        );
+    }
+
     callback(null, true);
 };
 
 export const parseCsv = (FileBuffer, userId: number, fileSource: string) => {
     const data: any[] = [];
+    let processedCount = 0;
 
     return new Promise((resolve, reject) => {
+        // Check buffer size and use streaming for large files
+        if (FileBuffer.length > uploadConfig.streamThreshold) {
+            return parseCsvStreaming(FileBuffer, userId, fileSource).then(resolve).catch(reject);
+        }
+
         Readable.from(FileBuffer)
             .pipe(csv())
             .on("data", (row) => {
+                // Prevent memory overflow from too many entries
+                if (processedCount >= uploadConfig.maxLogbookEntries) {
+                    reject(
+                        new Error(
+                            `Maximum number of logbook entries (${uploadConfig.maxLogbookEntries}) exceeded`,
+                        ),
+                    );
+                    return;
+                }
+
                 const parsedRow = parseEntry(row, userId, fileSource);
                 if (!parsedRow) {
                     return;
                 }
                 data.push(parsedRow);
+                processedCount++;
             })
             .on("end", () => {
                 resolve(data);
+            })
+            .on("error", reject);
+    });
+};
+
+// Streaming parser for large CSV files
+export const parseCsvStreaming = (FileBuffer, userId: number, fileSource: string) => {
+    return new Promise((resolve, reject) => {
+        const chunks: any[][] = [];
+        let currentChunk: any[] = [];
+        let processedCount = 0;
+
+        Readable.from(FileBuffer)
+            .pipe(csv())
+            .on("data", (row) => {
+                // Prevent memory overflow from too many entries
+                if (processedCount >= uploadConfig.maxLogbookEntries) {
+                    reject(
+                        new Error(
+                            `Maximum number of logbook entries (${uploadConfig.maxLogbookEntries}) exceeded`,
+                        ),
+                    );
+                    return;
+                }
+
+                const parsedRow = parseEntry(row, userId, fileSource);
+                if (!parsedRow) {
+                    return;
+                }
+
+                currentChunk.push(parsedRow);
+                processedCount++;
+
+                // When chunk is full, add to chunks array and create new chunk
+                if (currentChunk.length >= uploadConfig.csvChunkSize) {
+                    chunks.push([...currentChunk]);
+                    currentChunk = []; // Clear current chunk to free memory
+                }
+            })
+            .on("end", () => {
+                // Add final chunk if it has data
+                if (currentChunk.length > 0) {
+                    chunks.push(currentChunk);
+                }
+
+                // Flatten chunks for backward compatibility
+                const allData = chunks.flat();
+                resolve(allData);
             })
             .on("error", reject);
     });
@@ -96,7 +173,7 @@ export const parseEntry = (data: any, userId: number, fileSource: string) => {
 
 export const parseUnique = (userId: number, data: any) => {
     return `${userId}-${data.date}-${data.off_block}-${data.departure_airport_name}-${data.type_of_aircraft}-${data.registration}`;
-}
+};
 
 export const parseTime = (timeString: string): number => {
     if (!timeString || typeof timeString !== "string") {

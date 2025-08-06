@@ -97,39 +97,70 @@ export class UserService {
         return updatedUser;
     }
 
-    async getLogbook(userId: number) {
-        const logbook = await this.prisma.logbookEntry.findMany({
-            where: { userId },
-            orderBy: { createdAt: "asc" },
-            include: {
-                user: true,
-                plan: true,
-                recording: true,
-                crew: {
-                    select: {
-                        id: true,
-                        username: true,
-                        firstName: true,
-                        lastName: true,
-                        profilePictureUrl: true,
-                        organizationId: true,
-                        organizationRole: true,
-                        organization: true,
-                        location: true,
-                        bio: true,
-                        publicProfile: true
+    async getLogbook(userId: number, page: number = 1, limit: number = 100) {
+        // Validate pagination parameters
+        const validatedPage = Math.max(1, page);
+        const validatedLimit = Math.min(Math.max(1, limit), 1000); // Max 1000 entries per page
+        const skip = (validatedPage - 1) * validatedLimit;
+
+        const [logbook, totalCount] = await Promise.all([
+            this.prisma.logbookEntry.findMany({
+                where: { userId },
+                orderBy: { createdAt: "desc" }, // Most recent first
+                skip,
+                take: validatedLimit,
+                include: {
+                    user: true,
+                    plan: true,
+                    recording: {
+                        select: {
+                            id: true,
+                            name: true,
+                            description: true,
+                            // Don't include coords by default to save memory
+                        },
+                    },
+                    crew: {
+                        select: {
+                            id: true,
+                            username: true,
+                            firstName: true,
+                            lastName: true,
+                            profilePictureUrl: true,
+                            organizationId: true,
+                            organizationRole: true,
+                            organization: true,
+                            location: true,
+                            bio: true,
+                            publicProfile: true,
+                        },
                     },
                 },
-            },
-        });
+            }),
+            this.prisma.logbookEntry.count({
+                where: { userId },
+            }),
+        ]);
 
-        return logbook.map((entry) => {
-            const { passwordHash, ...rest } = entry.user;
-            return {
-                ...entry,
-                user: rest,
-            };
-        });
+        const totalPages = Math.ceil(totalCount / validatedLimit);
+
+        return {
+            data: logbook.map((entry) => {
+                const { passwordHash, ...rest } = entry.user;
+                return {
+                    ...entry,
+                    user: rest,
+                };
+            }),
+            pagination: {
+                page: validatedPage,
+                limit: validatedLimit,
+                totalCount,
+                totalPages,
+                hasNext: validatedPage < totalPages,
+                hasPrev: validatedPage > 1,
+            },
+        };
     }
 
     async editLogbookEntry(userId: number, entryId: number, entryData: any) {
@@ -168,17 +199,38 @@ export class UserService {
             throw new Error("No file data provided");
         }
 
-        let parsed = await parseCsv(buffer, userId, fileSource);
+        const parsed = await parseCsv(buffer, userId, fileSource);
 
         if (!Array.isArray(parsed) || parsed.length === 0) {
             throw new Error("No valid logbook entries found in the file");
         }
 
-        // Add each entry to the database but ensure to handle duplicates
+        // Process entries in batches to prevent memory overflow
+        const batchSize = 500; // Process 500 entries at a time
         const responses: LogbookEntry[] = [];
-        for (const entry of parsed) {
+
+        for (let i = 0; i < parsed.length; i += batchSize) {
+            const batch = parsed.slice(i, i + batchSize);
+
+            // Process current batch
+            const batchResponses = await this.processBatch(batch, userId);
+            responses.push(...batchResponses);
+
+            // Optional: Add a small delay between batches to reduce memory pressure
+            if (i + batchSize < parsed.length) {
+                await new Promise((resolve) => setTimeout(resolve, 100));
+            }
+        }
+
+        return responses;
+    }
+
+    private async processBatch(entries: any[], userId: number): Promise<LogbookEntry[]> {
+        const responses: LogbookEntry[] = [];
+
+        for (const entry of entries) {
             try {
-                let response = await this.prisma.logbookEntry
+                const response = await this.prisma.logbookEntry
                     .create({
                         data: {
                             ...entry,
@@ -208,7 +260,6 @@ export class UserService {
     }
 
     async addLogbookEntry(userId: number, entryData: any) {
-
         if (!userId) {
             throw new Error("User ID is required");
         }
@@ -226,8 +277,7 @@ export class UserService {
                 },
                 crew: {
                     connect: [
-                        ...(entryData.crew || [])
-                        .map((crewMember: any) => ({
+                        ...(entryData.crew || []).map((crewMember: any) => ({
                             id: crewMember.id,
                         })),
                     ].filter((c) => c.id),
@@ -254,7 +304,7 @@ export class UserService {
 
         await this.prisma.flightPlan.updateMany({
             where: {
-            logbookEntryId: { in: entryIds },
+                logbookEntryId: { in: entryIds },
             },
             data: {
                 logbookEntryId: undefined,
@@ -337,7 +387,11 @@ export class UserService {
         return updatedEntry;
     }
 
-    async uploadRecording(userId: number, body: { entryId: number; fileSource: string }, file: Express.Multer.File) {
+    async uploadRecording(
+        userId: number,
+        body: { entryId: number; fileSource: string },
+        file: Express.Multer.File,
+    ) {
         const { entryId, fileSource } = body;
 
         if (!fileSource) {
@@ -349,24 +403,80 @@ export class UserService {
             throw new Error("No valid recording data found in the file");
         }
 
-        // Create file recording in database and like it with the entry
+        // Optimize coordinate data before storage
+        const optimizedCoords = this.optimizeCoordinates(data.coords);
+
+        // Create file recording in database and link it with the entry
         try {
             const recording = await this.prisma.flightRecording.create({
                 data: {
                     name: data.name,
                     description: data.description,
-                    coords: data.coords.map((placemark: any) => ({ ...placemark })),
+                    coords: optimizedCoords.map((placemark: any) => ({ ...placemark })),
                     logbookEntry: {
                         connect: { id: Number(entryId) },
                     },
                 },
             });
 
-            
-            return recording
+            return recording;
         } catch (error) {
             console.error("Error creating flight recording:", error);
             throw new Error("Failed to create flight recording");
         }
+    }
+
+    private optimizeCoordinates(coords: any[]): any[] {
+        // If coordinates are too many, downsample to reduce memory usage
+        if (coords.length <= 5000) {
+            return coords;
+        }
+
+        // Simple downsampling: take every nth coordinate to reduce dataset size
+        const downsampleFactor = Math.ceil(coords.length / 5000);
+        const downsampled = coords.filter((_, index) => index % downsampleFactor === 0);
+
+        // Always include the first and last coordinates
+        if (downsampled[0] !== coords[0]) {
+            downsampled.unshift(coords[0]);
+        }
+        if (downsampled[downsampled.length - 1] !== coords[coords.length - 1]) {
+            downsampled.push(coords[coords.length - 1]);
+        }
+
+        return downsampled;
+    }
+
+    async getFlightRecording(userId: number, recordingId: number) {
+        if (!recordingId) {
+            throw new Error("Recording ID is required");
+        }
+
+        const recording = await this.prisma.flightRecording.findFirst({
+            where: {
+                id: recordingId,
+                logbookEntry: {
+                    userId: userId, // Ensure user owns the logbook entry
+                },
+            },
+            include: {
+                logbookEntry: {
+                    select: {
+                        id: true,
+                        date: true,
+                        depAd: true,
+                        arrAd: true,
+                        aircraftType: true,
+                        aircraftRegistration: true,
+                    },
+                },
+            },
+        });
+
+        if (!recording) {
+            throw new Error("Flight recording not found or access denied");
+        }
+
+        return recording;
     }
 }

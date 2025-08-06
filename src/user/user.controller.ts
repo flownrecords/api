@@ -5,6 +5,7 @@ import {
     HttpCode,
     HttpStatus,
     Post,
+    Query,
     Req,
     UploadedFile,
     UseGuards,
@@ -36,7 +37,7 @@ export class UserController {
     @Post("me")
     updateMe(@GetUser() user: User, @Body() payload) {
         return this.userService.updateUser(user.id, payload);
-    }   
+    }
 
     @Get("all")
     getAllUsers() {
@@ -44,8 +45,14 @@ export class UserController {
     }
 
     @Get("logbook")
-    getLogbook(@GetUser() user: User) {
-        return this.userService.getLogbook(user.id);
+    getLogbook(
+        @GetUser() user: User,
+        @Query("page") page: string = "1",
+        @Query("limit") limit: string = "100",
+    ) {
+        const pageNum = parseInt(page, 10) || 1;
+        const limitNum = parseInt(limit, 10) || 100;
+        return this.userService.getLogbook(user.id, pageNum, limitNum);
     }
 
     @HttpCode(HttpStatus.OK)
@@ -92,8 +99,18 @@ export class UserController {
     @HttpCode(HttpStatus.OK)
     @Post("recording/upload")
     @UseInterceptors(FileInterceptor("file", { fileFilter: kmlFilter }))
-    uploadRecording(@GetUser() user: User, @Body() body, @UploadedFile() file: Express.Multer.File) {
+    uploadRecording(
+        @GetUser() user: User,
+        @Body() body,
+        @UploadedFile() file: Express.Multer.File,
+    ) {
         return this.userService.uploadRecording(user.id, body, file);
+    }
+
+    @Get("recording/:id")
+    getFlightRecording(@GetUser() user: User, @Req() req) {
+        const recordingId = parseInt(req.params?.id, 10);
+        return this.userService.getFlightRecording(user.id, recordingId);
     }
 
     @Get(":username")
