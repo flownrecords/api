@@ -18,9 +18,10 @@ async function bootstrap() {
 
     // Enable CORS for all origins
     app.enableCors({
-        origin: "*",
+        origin: "https://flownrecords.live",
         methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
         allowedHeaders: "Content-Type, Accept, Authorization, Bearer",
+        credentials: true,
     });
 
     await app.listen(process.env.PORT ?? 3000);

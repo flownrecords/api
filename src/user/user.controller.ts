@@ -48,6 +48,11 @@ export class UserController {
         return this.userService.getLogbook(user.id);
     }
 
+    @Get("logbook/:id")
+    getLogbookEntry(@GetUser() user: User, @Req() req) {
+        return this.userService.getLogbookEntry(user.id, req.params?.id);
+    }
+
     @HttpCode(HttpStatus.OK)
     @Post("logbook/upload")
     @UseInterceptors(FileInterceptor("file", { fileFilter: csvFilter }))

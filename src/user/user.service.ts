@@ -104,7 +104,7 @@ export class UserService {
             include: {
                 user: true,
                 plan: true,
-                recording: true,
+                recording: false,
                 crew: {
                     select: {
                         id: true,
@@ -130,6 +130,54 @@ export class UserService {
                 user: rest,
             };
         });
+    }
+
+    async getLogbookEntry(userId: number, entryId: number) {
+        if (!entryId) {
+            throw new Error("Entry ID is required");
+        }
+
+        entryId = Number(entryId);
+        
+        const entry = await this.prisma.logbookEntry.findUnique({
+            where: { id: entryId, userId },
+            include: {
+                user: true,
+                plan: true,
+                recording: true,
+                crew: {
+                    select: {
+                        id: true,
+                        username: true,
+                        firstName: true,
+                        lastName: true,
+                        profilePictureUrl: true,
+                        organizationId: true,
+                        organizationRole: true,
+                        organization: {
+                            select: {
+                                id: true,
+                                name: true,
+                                logoUrl: true,
+                            },
+                        },
+                        location: true,
+                        bio: true,
+                        publicProfile: true
+                    },
+                },
+            },
+        });
+
+        if (!entry) {
+            throw new NotFoundException("Logbook entry not found");
+        }
+
+        const { passwordHash, ...rest } = entry.user;
+        return {
+            ...entry,
+            user: rest,
+        };
     }
 
     async editLogbookEntry(userId: number, entryId: number, entryData: any) {
