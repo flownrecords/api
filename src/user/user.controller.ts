@@ -15,7 +15,7 @@ import { GetUser } from "src/auth/decorator";
 import { JwtGuard } from "src/auth/guard";
 import { UserService } from "./user.service";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { csvFilter } from "./util";
+import { csvFilter, kmlFilter } from "./util";
 
 @UseGuards(JwtGuard)
 @Controller("users")
@@ -87,6 +87,13 @@ export class UserController {
     removeCrewToLogbookEntry(@GetUser() user: User, @Body() body) {
         const { entryId, crewUsername } = body;
         return this.userService.removeCrewToLogbookEntry(user.id, entryId, crewUsername);
+    }
+
+    @HttpCode(HttpStatus.OK)
+    @Post("recording/upload")
+    @UseInterceptors(FileInterceptor("file", { fileFilter: kmlFilter }))
+    uploadRecording(@GetUser() user: User, @Body() body, @UploadedFile() file: Express.Multer.File) {
+        return this.userService.uploadRecording(user.id, body, file);
     }
 
     @Get(":username")

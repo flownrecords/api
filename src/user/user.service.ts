@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
-import { parseCsv, parseUnique } from "./util";
+import { parseCsv, parseKml, parseUnique } from "./util";
 import { LogbookEntry } from "@prisma/client";
 
 @Injectable()
@@ -104,6 +104,7 @@ export class UserService {
             include: {
                 user: true,
                 plan: true,
+                recording: true,
                 crew: {
                     select: {
                         id: true,
@@ -334,5 +335,38 @@ export class UserService {
         });
 
         return updatedEntry;
+    }
+
+    async uploadRecording(userId: number, body: { entryId: number; fileSource: string }, file: Express.Multer.File) {
+        const { entryId, fileSource } = body;
+
+        if (!fileSource) {
+            throw new Error("File source is required");
+        }
+
+        const data = await parseKml(fileSource, file.buffer);
+        if (!data || !data.coords || data.coords.length === 0) {
+            throw new Error("No valid recording data found in the file");
+        }
+
+        // Create file recording in database and like it with the entry
+        try {
+            const recording = await this.prisma.flightRecording.create({
+                data: {
+                    name: data.name,
+                    description: data.description,
+                    coords: data.coords.map((placemark: any) => ({ ...placemark })),
+                    logbookEntry: {
+                        connect: { id: Number(entryId) },
+                    },
+                },
+            });
+
+            
+            return recording
+        } catch (error) {
+            console.error("Error creating flight recording:", error);
+            throw new Error("Failed to create flight recording");
+        }
     }
 }

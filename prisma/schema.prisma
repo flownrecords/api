@@ -108,8 +108,9 @@ model FlightRecording {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  fileName String
-  data     Json
+  name String
+  description String?
+  coords Json[]
 
   logbookEntryId Int          @unique
   logbookEntry   LogbookEntry @relation(fields: [logbookEntryId], references: [id])
