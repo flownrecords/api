@@ -30,7 +30,7 @@ export class AuthService {
                 logbookEntries: {
                     include: {
                         plan: true,
-                        recording: true,
+                        // recording: true, // Temporarily disabled due to schema mismatch
                     },
                 },
                 crewForEntries: true,

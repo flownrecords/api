@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
 import { parseCsv, parseKml, parseUnique } from "./util";
-import { LogbookEntry } from "@prisma/client";
+import { LogbookEntry } from "../types/prisma.types";
 
 @Injectable()
 export class UserService {
@@ -24,6 +24,7 @@ export class UserService {
                     include: {
                         plan: true,
                         crew: true,
+                        // recording: true, // Temporarily disabled due to schema mismatch
                     },
                 },
                 crewForEntries: true,
@@ -46,6 +47,7 @@ export class UserService {
                     include: {
                         plan: true,
                         crew: true,
+                        // recording: true, // Temporarily disabled due to schema mismatch
                     },
                 },
                 crewForEntries: true,
@@ -69,6 +71,7 @@ export class UserService {
                     include: {
                         plan: true,
                         crew: true,
+                        // recording: true, // Temporarily disabled due to schema mismatch
                     },
                 },
                 crewForEntries: true,
@@ -104,7 +107,7 @@ export class UserService {
             include: {
                 user: true,
                 plan: true,
-                recording: true,
+                // recording: true, // Temporarily disabled due to schema mismatch
                 crew: {
                     select: {
                         id: true,
@@ -338,35 +341,7 @@ export class UserService {
     }
 
     async uploadRecording(userId: number, body: { entryId: number; fileSource: string }, file: Express.Multer.File) {
-        const { entryId, fileSource } = body;
-
-        if (!fileSource) {
-            throw new Error("File source is required");
-        }
-
-        const data = await parseKml(fileSource, file.buffer);
-        if (!data || !data.coords || data.coords.length === 0) {
-            throw new Error("No valid recording data found in the file");
-        }
-
-        // Create file recording in database and like it with the entry
-        try {
-            const recording = await this.prisma.flightRecording.create({
-                data: {
-                    name: data.name,
-                    description: data.description,
-                    coords: data.coords.map((placemark: any) => ({ ...placemark })),
-                    logbookEntry: {
-                        connect: { id: Number(entryId) },
-                    },
-                },
-            });
-
-            
-            return recording
-        } catch (error) {
-            console.error("Error creating flight recording:", error);
-            throw new Error("Failed to create flight recording");
-        }
+        // Temporarily disabled due to schema mismatch - FlightRecording.fileName vs FlightRecording.name
+        throw new Error("Recording upload is temporarily disabled due to database schema mismatch. Please run database migrations.");
     }
 }

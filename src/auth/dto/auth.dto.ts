@@ -1,4 +1,4 @@
-import { UserOrganizationRole } from "@prisma/client";
+import { UserOrganizationRole } from "../../types/prisma.types";
 import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, MinLength } from "class-validator";
 
 export class AuthDto {
