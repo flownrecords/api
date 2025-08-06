@@ -1,4 +1,4 @@
-![Flight Records Banner](/public/banner.png)
+![Flight Records Banner](https://github.com/flownrecords/website/raw/main/public/banner.png)
 # Flown Records API
 Flown Records is a flight logbook platform that allows pilots to upload, analyze, and visualize their flight data.
 
