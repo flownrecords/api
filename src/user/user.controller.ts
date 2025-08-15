@@ -100,16 +100,12 @@ export class UserController {
     @HttpCode(HttpStatus.OK)
     @Post("recording/upload")
     @UseInterceptors(FileInterceptor("file", { fileFilter: kmlFilter }))
-    uploadRecording(
-        @GetUser() user: any,
-        @Body() body,
-        @UploadedFile() file: Express.Multer.File,
-    ) {
+    uploadRecording(@GetUser() user: any, @Body() body, @UploadedFile() file: Express.Multer.File) {
         return this.userService.uploadRecording(user.id, body, file);
     }
 
     @Get("report")
-    @Header('Content-Type', 'image/png')
+    @Header("Content-Type", "image/png")
     async generateReport(@GetUser() user: any, @Res() res: Response) {
         const imageBuffer = await this.userService.generateReport(user.id);
         res.send(imageBuffer);

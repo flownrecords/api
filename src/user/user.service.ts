@@ -1,6 +1,13 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
-import { parseCsv, parseKml, parseUnique, calculateUserStats, generateReportImage, UserInfo } from "./util";
+import {
+    parseCsv,
+    parseKml,
+    parseUnique,
+    calculateUserStats,
+    generateReportImage,
+    UserInfo,
+} from "./util";
 // import { LogbookEntry } from "@prisma/client";
 
 @Injectable()
