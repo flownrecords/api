@@ -1,4 +1,4 @@
-import { XMLParser } from 'fast-xml-parser';
+import { XMLParser } from "fast-xml-parser";
 
 export const kmlFilter = (req: Request, file, callback) => {
     if (!file.originalname.match(/\.(kml)$/)) {
@@ -31,35 +31,35 @@ export interface RawFlight {
 
 export const parseKml = (fileSource: string, fileBuffer: Buffer): Promise<RawFlight> => {
     return new Promise((resolve, reject) => {
-        if(!fileSource || !fileBuffer) {
+        if (!fileSource || !fileBuffer) {
             return reject(new Error("File source and buffer are required"));
         }
 
         try {
             const xmlParser = new XMLParser({
                 ignoreAttributes: false,
-                attributeNamePrefix: '@_',
+                attributeNamePrefix: "@_",
                 parseAttributeValue: true,
                 trimValues: true,
             });
 
-            const kmlString = fileBuffer.toString('utf-8');
+            const kmlString = fileBuffer.toString("utf-8");
             const parsedXml = xmlParser.parse(kmlString);
 
             // Extract KML data structure
             const kml = parsedXml.kml || parsedXml.Kml || parsedXml.KML;
             if (!kml) {
-                throw new Error('Invalid KML file: No KML root element found');
+                throw new Error("Invalid KML file: No KML root element found");
             }
 
-            if(fileSource === "AIRNAV") {
+            if (fileSource === "AIRNAV") {
                 resolve(parseAirNavRecord(kml));
             } else {
                 // Handle other KML sources if needed
                 console.warn(`Unsupported KML source: ${fileSource}`);
                 return {
                     WARNING: `Unsupported KML source: ${fileSource}`,
-                    ...kml
+                    ...kml,
                 };
             }
         } catch (error) {
@@ -77,8 +77,8 @@ export function parseAirNavRecord(data: any): Promise<RawFlight> {
         const flight: RawFlight = {
             name: "Unknown Flight",
             description: "Unknown Description",
-            coords: []
-        }
+            coords: [],
+        };
 
         try {
             const document = data.Document || data.document;
@@ -94,7 +94,7 @@ export function parseAirNavRecord(data: any): Promise<RawFlight> {
                 throw new Error("Invalid KML structure: No Folder element found or not an array");
             }
 
-            const positions = folders.filter(folder => folder.name === "Positions")[0]?.Placemark;
+            const positions = folders.filter((folder) => folder.name === "Positions")[0]?.Placemark;
             if (!positions || !Array.isArray(positions)) {
                 throw new Error("Invalid KML structure: No Positions found or not an array");
             }
@@ -106,39 +106,63 @@ export function parseAirNavRecord(data: any): Promise<RawFlight> {
                 const metadadata = pos.ExtendedData?.Data || pos.ExtendedData?.data || [];
                 return {
                     id: pos.name,
-                    latitude: parseFloat(pos.Point.coordinates.split(',')[1]),
-                    longitude: parseFloat(pos.Point.coordinates.split(',')[0]),
+                    latitude: parseFloat(pos.Point.coordinates.split(",")[1]),
+                    longitude: parseFloat(pos.Point.coordinates.split(",")[0]),
                     altitude: {
                         mode: pos.Point.altitudeMode,
-                        value: Math.floor((parseFloat(pos.Point.coordinates.split(',')[2]) * 3.28084)) // Convert meters to feet
+                        value: Math.floor(
+                            parseFloat(pos.Point.coordinates.split(",")[2]) * 3.28084,
+                        ), // Convert meters to feet
                     },
                     timestamp: pos.TimeStamp?.when || pos.timestamp || pos.TimeStamp,
-                    heading: metadadata ?
-                        Number(metadadata.find((e) => e.displayName === "Heading" || e["@_name"] === "fhd")?.value.replace(/°/g, ''))
+                    heading: metadadata
+                        ? Number(
+                              metadadata
+                                  .find((e) => e.displayName === "Heading" || e["@_name"] === "fhd")
+                                  ?.value.replace(/°/g, ""),
+                          )
                         : undefined,
-                    groundSpeed: metadadata ?
-                        Number(metadadata.find((e) => e.displayName === "Ground Speed" || e["@_name"] === "fgs")?.value
-                        .replace(/ kts/g, '')
-                        .replace(/ kt/g, '')
-                        .replace(/ kmh/g, '')
-                        .replace(/ km\/h/g, '')
-                        .replace(/ mph/g, ''))
+                    groundSpeed: metadadata
+                        ? Number(
+                              metadadata
+                                  .find(
+                                      (e) =>
+                                          e.displayName === "Ground Speed" || e["@_name"] === "fgs",
+                                  )
+                                  ?.value.replace(/ kts/g, "")
+                                  .replace(/ kt/g, "")
+                                  .replace(/ kmh/g, "")
+                                  .replace(/ km\/h/g, "")
+                                  .replace(/ mph/g, ""),
+                          )
                         : undefined,
-                    verticalSpeed:
-                        metadadata ?
-                        Number(metadadata.find((e) => e.displayName === "Vertical Speed" || e["@_name"] === "fvr")?.value
-                        .replace(/ ft\/min/g, '')
-                        .replace(/ feet\/min/g, '')
-                        .replace(/ fpm/g, '')
-                        .replace(/ ft\/min/g, ''))
+                    verticalSpeed: metadadata
+                        ? Number(
+                              metadadata
+                                  .find(
+                                      (e) =>
+                                          e.displayName === "Vertical Speed" ||
+                                          e["@_name"] === "fvr",
+                                  )
+                                  ?.value.replace(/ ft\/min/g, "")
+                                  .replace(/ feet\/min/g, "")
+                                  .replace(/ fpm/g, "")
+                                  .replace(/ ft\/min/g, ""),
+                          )
                         : undefined,
-                    squawk: 
-                        metadadata ?
-                        Number(metadadata.find((e) => e.displayName === "Squawk" || e["@_name"] === "sq")?.value)
+                    squawk: metadadata
+                        ? Number(
+                              metadadata.find(
+                                  (e) => e.displayName === "Squawk" || e["@_name"] === "sq",
+                              )?.value,
+                          )
                         : undefined,
-                    source: metadadata ? metadadata.find((e) => e.displayName === "Source" || e["@_name"] === "so")?.value : undefined
-                }
-            })
+                    source: metadadata
+                        ? metadadata.find((e) => e.displayName === "Source" || e["@_name"] === "so")
+                              ?.value
+                        : undefined,
+                };
+            });
 
             resolve(flight);
         } catch (error) {

@@ -1,7 +1,14 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
-import { parseCsv, parseKml, parseUnique } from "./util";
-import { LogbookEntry } from "@prisma/client";
+import {
+    parseCsv,
+    parseKml,
+    parseUnique,
+    calculateUserStats,
+    generateReportImage,
+    UserInfo,
+} from "./util";
+// import { LogbookEntry } from "@prisma/client";
 
 @Injectable()
 export class UserService {
@@ -117,7 +124,7 @@ export class UserService {
                         organization: true,
                         location: true,
                         bio: true,
-                        publicProfile: true
+                        publicProfile: true,
                     },
                 },
             },
@@ -138,7 +145,7 @@ export class UserService {
         }
 
         entryId = Number(entryId);
-        
+
         const entry = await this.prisma.logbookEntry.findUnique({
             where: { id: entryId, userId },
             include: {
@@ -163,7 +170,7 @@ export class UserService {
                         },
                         location: true,
                         bio: true,
-                        publicProfile: true
+                        publicProfile: true,
                     },
                 },
             },
@@ -216,17 +223,17 @@ export class UserService {
             throw new Error("No file data provided");
         }
 
-        let parsed = await parseCsv(buffer, userId, fileSource);
+        const parsed = await parseCsv(buffer, userId, fileSource);
 
         if (!Array.isArray(parsed) || parsed.length === 0) {
             throw new Error("No valid logbook entries found in the file");
         }
 
         // Add each entry to the database but ensure to handle duplicates
-        const responses: LogbookEntry[] = [];
+        const responses: any[] = [];
         for (const entry of parsed) {
             try {
-                let response = await this.prisma.logbookEntry
+                const response = await this.prisma.logbookEntry
                     .create({
                         data: {
                             ...entry,
@@ -256,7 +263,6 @@ export class UserService {
     }
 
     async addLogbookEntry(userId: number, entryData: any) {
-
         if (!userId) {
             throw new Error("User ID is required");
         }
@@ -274,8 +280,7 @@ export class UserService {
                 },
                 crew: {
                     connect: [
-                        ...(entryData.crew || [])
-                        .map((crewMember: any) => ({
+                        ...(entryData.crew || []).map((crewMember: any) => ({
                             id: crewMember.id,
                         })),
                     ].filter((c) => c.id),
@@ -302,7 +307,7 @@ export class UserService {
 
         await this.prisma.flightPlan.updateMany({
             where: {
-            logbookEntryId: { in: entryIds },
+                logbookEntryId: { in: entryIds },
             },
             data: {
                 logbookEntryId: undefined,
@@ -385,7 +390,11 @@ export class UserService {
         return updatedEntry;
     }
 
-    async uploadRecording(userId: number, body: { entryId: number; fileSource: string }, file: Express.Multer.File) {
+    async uploadRecording(
+        userId: number,
+        body: { entryId: number; fileSource: string },
+        file: Express.Multer.File,
+    ) {
         const { entryId, fileSource } = body;
 
         if (!fileSource) {
@@ -410,11 +419,48 @@ export class UserService {
                 },
             });
 
-            
-            return recording
+            return recording;
         } catch (error) {
             console.error("Error creating flight recording:", error);
             throw new Error("Failed to create flight recording");
         }
+    }
+
+    async generateReport(userId: number): Promise<Buffer> {
+        if (!userId) {
+            throw new Error("User ID is required");
+        }
+
+        // Get user information
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: {
+                firstName: true,
+                lastName: true,
+                username: true,
+                profilePictureUrl: true,
+            },
+        });
+
+        if (!user) {
+            throw new NotFoundException("User not found");
+        }
+
+        // Get user's logbook
+        const logbook = await this.getLogbook(userId);
+
+        // Calculate statistics
+        const stats = calculateUserStats(logbook);
+
+        // Prepare user info
+        const userInfo: UserInfo = {
+            firstName: user.firstName || undefined,
+            lastName: user.lastName || undefined,
+            username: user.username,
+            profilePictureUrl: user.profilePictureUrl || undefined,
+        };
+
+        // Generate and return the report image
+        return await generateReportImage(userInfo, stats);
     }
 }
