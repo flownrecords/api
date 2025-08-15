@@ -117,7 +117,7 @@ export class UserService {
                         organization: true,
                         location: true,
                         bio: true,
-                        publicProfile: true
+                        publicProfile: true,
                     },
                 },
             },
@@ -138,7 +138,7 @@ export class UserService {
         }
 
         entryId = Number(entryId);
-        
+
         const entry = await this.prisma.logbookEntry.findUnique({
             where: { id: entryId, userId },
             include: {
@@ -163,7 +163,7 @@ export class UserService {
                         },
                         location: true,
                         bio: true,
-                        publicProfile: true
+                        publicProfile: true,
                     },
                 },
             },
@@ -216,7 +216,7 @@ export class UserService {
             throw new Error("No file data provided");
         }
 
-        let parsed = await parseCsv(buffer, userId, fileSource);
+        const parsed = await parseCsv(buffer, userId, fileSource);
 
         if (!Array.isArray(parsed) || parsed.length === 0) {
             throw new Error("No valid logbook entries found in the file");
@@ -226,7 +226,7 @@ export class UserService {
         const responses: LogbookEntry[] = [];
         for (const entry of parsed) {
             try {
-                let response = await this.prisma.logbookEntry
+                const response = await this.prisma.logbookEntry
                     .create({
                         data: {
                             ...entry,
@@ -256,7 +256,6 @@ export class UserService {
     }
 
     async addLogbookEntry(userId: number, entryData: any) {
-
         if (!userId) {
             throw new Error("User ID is required");
         }
@@ -274,8 +273,7 @@ export class UserService {
                 },
                 crew: {
                     connect: [
-                        ...(entryData.crew || [])
-                        .map((crewMember: any) => ({
+                        ...(entryData.crew || []).map((crewMember: any) => ({
                             id: crewMember.id,
                         })),
                     ].filter((c) => c.id),
@@ -302,7 +300,7 @@ export class UserService {
 
         await this.prisma.flightPlan.updateMany({
             where: {
-            logbookEntryId: { in: entryIds },
+                logbookEntryId: { in: entryIds },
             },
             data: {
                 logbookEntryId: undefined,
@@ -385,7 +383,11 @@ export class UserService {
         return updatedEntry;
     }
 
-    async uploadRecording(userId: number, body: { entryId: number; fileSource: string }, file: Express.Multer.File) {
+    async uploadRecording(
+        userId: number,
+        body: { entryId: number; fileSource: string },
+        file: Express.Multer.File,
+    ) {
         const { entryId, fileSource } = body;
 
         if (!fileSource) {
@@ -410,8 +412,7 @@ export class UserService {
                 },
             });
 
-            
-            return recording
+            return recording;
         } catch (error) {
             console.error("Error creating flight recording:", error);
             throw new Error("Failed to create flight recording");

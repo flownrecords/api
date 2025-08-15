@@ -1,11 +1,11 @@
 export interface FIR {
     fir: string; // ICAO code of the FIR
     info: {
-        name: string,
-        icao: string,
-        country: string,
-        region: string,
-        limits: Coordinates[]
+        name: string;
+        icao: string;
+        country: string;
+        region: string;
+        limits: Coordinates[];
     };
     waypoints: {
         vfr: Waypoint[] | null; // VFR waypoints, null if not available
