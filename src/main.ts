@@ -1,7 +1,7 @@
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 import { ValidationPipe } from "@nestjs/common";
-import { json, urlencoded } from 'express';
+import { json, urlencoded } from "express";
 import bodyParser from "body-parser";
 
 async function bootstrap() {
@@ -13,8 +13,8 @@ async function bootstrap() {
         }),
     );
 
-    app.use(json({ limit: '10mb' }));
-    app.use(urlencoded({ extended: true, limit: '10mb' }));
+    app.use(json({ limit: "10mb" }));
+    app.use(urlencoded({ extended: true, limit: "10mb" }));
 
     // Enable CORS for all origins
     app.enableCors({

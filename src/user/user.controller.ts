@@ -6,6 +6,7 @@ import {
     HttpStatus,
     Post,
     Req,
+    Res,
     UploadedFile,
     UseGuards,
     UseInterceptors,
@@ -16,6 +17,7 @@ import { JwtGuard } from "src/auth/guard";
 import { UserService } from "./user.service";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { csvFilter, kmlFilter } from "./util";
+import { Response } from 'express';
 
 @UseGuards(JwtGuard)
 @Controller("users")
@@ -36,7 +38,7 @@ export class UserController {
     @Post("me")
     updateMe(@GetUser() user: User, @Body() payload) {
         return this.userService.updateUser(user.id, payload);
-    }   
+    }
 
     @Get("all")
     getAllUsers() {
@@ -97,8 +99,21 @@ export class UserController {
     @HttpCode(HttpStatus.OK)
     @Post("recording/upload")
     @UseInterceptors(FileInterceptor("file", { fileFilter: kmlFilter }))
-    uploadRecording(@GetUser() user: User, @Body() body, @UploadedFile() file: Express.Multer.File) {
+    uploadRecording(
+        @GetUser() user: User,
+        @Body() body,
+        @UploadedFile() file: Express.Multer.File,
+    ) {
         return this.userService.uploadRecording(user.id, body, file);
+    }
+
+    @Get("report")
+    async getUserReport(@GetUser() user: User, @Res() res: Response) {
+        const report = await this.userService.generateUserReport(user.id);
+        
+        res.setHeader('Content-Type', report.contentType);
+        res.setHeader('Content-Disposition', 'inline; filename="flight-report.svg"');
+        return res.send(report.data);
     }
 
     @Get(":username")

@@ -96,7 +96,7 @@ export const parseEntry = (data: any, userId: number, fileSource: string) => {
 
 export const parseUnique = (userId: number, data: any) => {
     return `${userId}-${data.date}-${data.off_block}-${data.departure_airport_name}-${data.type_of_aircraft}-${data.registration}`;
-}
+};
 
 export const parseTime = (timeString: string): number => {
     if (!timeString || typeof timeString !== "string") {
