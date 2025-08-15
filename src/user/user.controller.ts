@@ -36,7 +36,7 @@ export class UserController {
     @Post("me")
     updateMe(@GetUser() user: User, @Body() payload) {
         return this.userService.updateUser(user.id, payload);
-    }   
+    }
 
     @Get("all")
     getAllUsers() {
@@ -97,7 +97,11 @@ export class UserController {
     @HttpCode(HttpStatus.OK)
     @Post("recording/upload")
     @UseInterceptors(FileInterceptor("file", { fileFilter: kmlFilter }))
-    uploadRecording(@GetUser() user: User, @Body() body, @UploadedFile() file: Express.Multer.File) {
+    uploadRecording(
+        @GetUser() user: User,
+        @Body() body,
+        @UploadedFile() file: Express.Multer.File,
+    ) {
         return this.userService.uploadRecording(user.id, body, file);
     }
 
