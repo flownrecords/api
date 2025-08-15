@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
-import { parseCsv, parseKml, parseUnique } from "./util";
-import { LogbookEntry } from "@prisma/client";
+import { parseCsv, parseKml, parseUnique, calculateUserStats, generateReportImage, UserInfo } from "./util";
+// import { LogbookEntry } from "@prisma/client";
 
 @Injectable()
 export class UserService {
@@ -223,7 +223,7 @@ export class UserService {
         }
 
         // Add each entry to the database but ensure to handle duplicates
-        const responses: LogbookEntry[] = [];
+        const responses: any[] = [];
         for (const entry of parsed) {
             try {
                 const response = await this.prisma.logbookEntry
@@ -417,5 +417,43 @@ export class UserService {
             console.error("Error creating flight recording:", error);
             throw new Error("Failed to create flight recording");
         }
+    }
+
+    async generateReport(userId: number): Promise<Buffer> {
+        if (!userId) {
+            throw new Error("User ID is required");
+        }
+
+        // Get user information
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: {
+                firstName: true,
+                lastName: true,
+                username: true,
+                profilePictureUrl: true,
+            },
+        });
+
+        if (!user) {
+            throw new NotFoundException("User not found");
+        }
+
+        // Get user's logbook
+        const logbook = await this.getLogbook(userId);
+
+        // Calculate statistics
+        const stats = calculateUserStats(logbook);
+
+        // Prepare user info
+        const userInfo: UserInfo = {
+            firstName: user.firstName || undefined,
+            lastName: user.lastName || undefined,
+            username: user.username,
+            profilePictureUrl: user.profilePictureUrl || undefined,
+        };
+
+        // Generate and return the report image
+        return await generateReportImage(userInfo, stats);
     }
 }

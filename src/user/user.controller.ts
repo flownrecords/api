@@ -2,20 +2,23 @@ import {
     Body,
     Controller,
     Get,
+    Header,
     HttpCode,
     HttpStatus,
     Post,
     Req,
+    Res,
     UploadedFile,
     UseGuards,
     UseInterceptors,
 } from "@nestjs/common";
-import { User } from "@prisma/client";
+// import { User } from "@prisma/client";
 import { GetUser } from "src/auth/decorator";
 import { JwtGuard } from "src/auth/guard";
 import { UserService } from "./user.service";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { csvFilter, kmlFilter } from "./util";
+import { Response } from "express";
 
 @UseGuards(JwtGuard)
 @Controller("users")
@@ -28,13 +31,13 @@ export class UserController {
     }
 
     @Get("me")
-    getMe(@GetUser() user: User) {
+    getMe(@GetUser() user: any) {
         return user;
     }
 
     @HttpCode(HttpStatus.OK)
     @Post("me")
-    updateMe(@GetUser() user: User, @Body() payload) {
+    updateMe(@GetUser() user: any, @Body() payload) {
         return this.userService.updateUser(user.id, payload);
     }
 
@@ -44,52 +47,52 @@ export class UserController {
     }
 
     @Get("logbook")
-    getLogbook(@GetUser() user: User) {
+    getLogbook(@GetUser() user: any) {
         return this.userService.getLogbook(user.id);
     }
 
     @Get("logbook/:id")
-    getLogbookEntry(@GetUser() user: User, @Req() req) {
+    getLogbookEntry(@GetUser() user: any, @Req() req) {
         return this.userService.getLogbookEntry(user.id, req.params?.id);
     }
 
     @HttpCode(HttpStatus.OK)
     @Post("logbook/upload")
     @UseInterceptors(FileInterceptor("file", { fileFilter: csvFilter }))
-    updateLogbook(@GetUser() user: User, @Body() body, @UploadedFile() file: Express.Multer.File) {
+    updateLogbook(@GetUser() user: any, @Body() body, @UploadedFile() file: Express.Multer.File) {
         return this.userService.updateLogbook(user.id, body.source, file);
     }
 
     @HttpCode(HttpStatus.OK)
     @Post("logbook/add")
-    addLogbookEntry(@GetUser() user: User, @Body() body) {
+    addLogbookEntry(@GetUser() user: any, @Body() body) {
         return this.userService.addLogbookEntry(user.id, body);
     }
 
     @HttpCode(HttpStatus.OK)
     @Post("logbook/edit")
-    editLogbookEntry(@GetUser() user: User, @Body() body) {
+    editLogbookEntry(@GetUser() user: any, @Body() body) {
         const { entryId, entryData } = body;
         return this.userService.editLogbookEntry(user.id, entryId, entryData);
     }
 
     @HttpCode(HttpStatus.OK)
     @Post("logbook/delete")
-    deleteLogbookEntries(@GetUser() user: User, @Body() body) {
+    deleteLogbookEntries(@GetUser() user: any, @Body() body) {
         const { entryIds } = body;
         return this.userService.deleteLogbookEntries(user.id, entryIds);
     }
 
     @HttpCode(HttpStatus.OK)
     @Post("logbook/crewAdd")
-    addCrewToLogbookEntry(@GetUser() user: User, @Body() body) {
+    addCrewToLogbookEntry(@GetUser() user: any, @Body() body) {
         const { entryId, crewUsername } = body;
         return this.userService.addCrewToLogbookEntry(user.id, entryId, crewUsername);
     }
 
     @HttpCode(HttpStatus.OK)
     @Post("logbook/crewRemove")
-    removeCrewToLogbookEntry(@GetUser() user: User, @Body() body) {
+    removeCrewToLogbookEntry(@GetUser() user: any, @Body() body) {
         const { entryId, crewUsername } = body;
         return this.userService.removeCrewToLogbookEntry(user.id, entryId, crewUsername);
     }
@@ -98,11 +101,18 @@ export class UserController {
     @Post("recording/upload")
     @UseInterceptors(FileInterceptor("file", { fileFilter: kmlFilter }))
     uploadRecording(
-        @GetUser() user: User,
+        @GetUser() user: any,
         @Body() body,
         @UploadedFile() file: Express.Multer.File,
     ) {
         return this.userService.uploadRecording(user.id, body, file);
+    }
+
+    @Get("report")
+    @Header('Content-Type', 'image/png')
+    async generateReport(@GetUser() user: any, @Res() res: Response) {
+        const imageBuffer = await this.userService.generateReport(user.id);
+        res.send(imageBuffer);
     }
 
     @Get(":username")

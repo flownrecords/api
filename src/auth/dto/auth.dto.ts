@@ -1,5 +1,20 @@
-import { UserOrganizationRole } from "@prisma/client";
+// import { UserOrganizationRole } from "@prisma/client";
 import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, MinLength } from "class-validator";
+
+// Temporary enum until Prisma client is generated
+enum UserOrganizationRole {
+    GUEST = 'GUEST',
+    STUDENT = 'STUDENT',
+    PILOT = 'PILOT',
+    OPS = 'OPS',
+    FI = 'FI',
+    TKI = 'TKI',
+    MAIN = 'MAIN',
+    OFFICE = 'OFFICE',
+    SUPERVISOR = 'SUPERVISOR',
+    ADMIN = 'ADMIN',
+    OTHER = 'OTHER'
+}
 
 export class AuthDto {
     @IsOptional()
