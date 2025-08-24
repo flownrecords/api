@@ -9,6 +9,9 @@ import { NavDataModule } from "./navdata/navdata.module";
 import { WxController } from "./wx/wx.controller";
 import { WxService } from "./wx/wx.service";
 import { WxModule } from "./wx/wx.module";
+import { OrgsModule } from "./orgs/orgs.module";
+import { OrgsService } from "./orgs/orgs.service";
+import { OrgsController } from "./orgs/orgs.controller";
 
 @Module({
     imports: [
@@ -21,8 +24,9 @@ import { WxModule } from "./wx/wx.module";
         GeneralModule,
         NavDataModule,
         WxModule,
+        OrgsModule,
     ],
-    controllers: [WxController],
-    providers: [WxService],
+    controllers: [WxController, OrgsController],
+    providers: [WxService, OrgsService],
 })
 export class AppModule {}

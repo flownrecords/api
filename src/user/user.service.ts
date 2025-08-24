@@ -302,7 +302,7 @@ export class UserService {
 
         await this.prisma.flightPlan.updateMany({
             where: {
-            logbookEntryId: { in: entryIds },
+                logbookEntryId: { in: entryIds },
             },
             data: {
                 logbookEntryId: undefined,
