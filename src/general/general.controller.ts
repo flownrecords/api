@@ -1,5 +1,6 @@
-import { Controller, Get } from "@nestjs/common";
+import { Controller, Get, Param, Res } from "@nestjs/common";
 import { GeneralService } from "./general.service";
+import { Response } from "express";
 
 @Controller("")
 export class GeneralController {
@@ -15,5 +16,10 @@ export class GeneralController {
     @Get("/roles")
     getRoles() {
         return this.generalService.getRoles();
+    }
+
+    @Get("/download/:id")
+    getDownloadFile(@Param("id") id: string, @Res() res: Response) {
+        return this.generalService.getDownloadFile(res, id);
     }
 }
