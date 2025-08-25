@@ -300,12 +300,21 @@ export class UserService {
             throw new Error("No entry IDs provided");
         }
 
+        await this.prisma.flightRecording.updateMany({
+            where: {
+                logbookEntryId: { in: entryIds },
+            },
+            data: {
+                logbookEntryId: null,
+            },
+        });
+
         await this.prisma.flightPlan.updateMany({
             where: {
                 logbookEntryId: { in: entryIds },
             },
             data: {
-                logbookEntryId: undefined,
+                logbookEntryId: null,
             },
         });
 

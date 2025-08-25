@@ -112,8 +112,8 @@ model FlightRecording {
   description String?
   coords Json[]
 
-  logbookEntryId Int          @unique
-  logbookEntry   LogbookEntry @relation(fields: [logbookEntryId], references: [id])
+  logbookEntryId Int?          @unique
+  logbookEntry    LogbookEntry?  @relation(fields: [logbookEntryId], references: [id])
 }
 
 model Organization {

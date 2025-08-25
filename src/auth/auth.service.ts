@@ -65,11 +65,8 @@ export class AuthService {
 
         const inputName = dto.name || dto.username;
         const nameParts = inputName.split(" ");
-        const firstName = nameParts[0] || undefined;
-        const lastName =
-            nameParts.length > 1 && nameParts[nameParts.length - 1]
-                ? nameParts[nameParts.length - 1]
-                : undefined;
+        const firstName = nameParts.length > 0 ? nameParts[0] : null;
+        const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : null;
 
         const profilePictureUrl = `https://placehold.co/512/09090B/313ED8?font=roboto&text=${firstName?.charAt(0) || ""}${lastName?.charAt(0) || ""}`;
 
