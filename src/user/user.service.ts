@@ -305,7 +305,7 @@ export class UserService {
                 logbookEntryId: { in: entryIds },
             },
             data: {
-                logbookEntryId: null,
+                logbookEntryId: undefined,
             },
         });
 
@@ -371,8 +371,6 @@ export class UserService {
         const crewUsers = await this.prisma.user.findMany({
             where: {
                 username: { in: usernames },
-                organizationId: (await this.prisma.user.findUnique({ where: { id: userId } }))
-                    ?.organizationId,
             },
             select: { id: true },
         });
