@@ -464,4 +464,8 @@ export class UserService {
 
         return flightPlan;
     }
+
+    async generateInstagramReport(userId: number) {
+
+    }
 }
