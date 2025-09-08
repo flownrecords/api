@@ -50,7 +50,12 @@ export class GeneralService {
     }
 
     getStats() {
-        return JSON.parse(JSON.stringify(Object.fromEntries(this.statsMap)));
+        return {
+            ...JSON.parse(JSON.stringify(Object.fromEntries(this.statsMap))),
+            serverTime: new Date().toISOString(),
+            uptime: process.uptime(), // seconds
+            uptimeHuman: new Date(process.uptime() * 1000).toISOString().substr(11, 8), // HH:MM:SS
+        };
     }
 
     private updateStats() {
