@@ -101,6 +101,25 @@ export class UserController {
         return this.userService.uploadRecording(user.id, body, file);
     }
 
+    @HttpCode(HttpStatus.OK)
+    @Post("recording/delete")
+    deleteRecording(@GetUser() user: User, @Body() body) {
+        const { recordingId } = body;
+        return this.userService.deleteRecording(user.id, recordingId);
+    } 
+
+    @HttpCode(HttpStatus.OK)
+    @Get("plan/list")
+    getFlightPlans(@GetUser() user: User) {
+        return this.userService.userFlightPlans(user.id);
+    }
+
+    @HttpCode(HttpStatus.OK)
+    @Post("plan/add")
+    addPlan(@GetUser() user: User, @Body() body) {
+        return this.userService.addFlightPlan(user.id, body);
+    }
+
     @Get(":username")
     getUserByUsername(@Req() req) {
         return this.userService.getUserByUsername(req.params?.username);

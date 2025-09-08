@@ -7,9 +7,15 @@ import { LogbookEntry } from "@prisma/client";
 export class UserService {
     constructor(private prisma: PrismaService) {}
 
+    private sanitizeUser(user: any) {
+        if (!user) return null;
+        const { passwordHash, ...rest } = user;
+        return rest;
+    }
+
     async getAllUsers() {
         const users = await this.prisma.user.findMany();
-        return users.map(({ passwordHash, ...rest }) => rest);
+        return users.map(this.sanitizeUser);
     }
 
     async getUserById(id: number) {
@@ -34,8 +40,7 @@ export class UserService {
             throw new Error("User not found");
         }
 
-        const { passwordHash, ...rest } = user;
-        return rest;
+        return this.sanitizeUser(user);
     }
 
     async getUserByUsername(username: string) {
@@ -57,8 +62,7 @@ export class UserService {
             throw new Error("User not found");
         }
 
-        const { passwordHash, ...rest } = user;
-        return rest;
+        return this.sanitizeUser(user);
     }
 
     async getUserByEmail(email: string) {
@@ -80,8 +84,7 @@ export class UserService {
             throw new Error("User not found");
         }
 
-        const { passwordHash, ...rest } = user;
-        return rest;
+        return this.sanitizeUser(user);
     }
 
     async updateUser(id: number, userData: any) {
@@ -94,7 +97,7 @@ export class UserService {
             data: userData,
         });
 
-        return updatedUser;
+        return this.sanitizeUser(updatedUser);
     }
 
     async getLogbook(userId: number) {
@@ -124,10 +127,9 @@ export class UserService {
         });
 
         return logbook.map((entry) => {
-            const { passwordHash, ...rest } = entry.user;
             return {
                 ...entry,
-                user: rest,
+                user: this.sanitizeUser(entry.user),
             };
         });
     }
@@ -173,10 +175,9 @@ export class UserService {
             throw new NotFoundException("Logbook entry not found");
         }
 
-        const { passwordHash, ...rest } = entry.user;
         return {
             ...entry,
-            user: rest,
+            user: this.sanitizeUser(entry.user),
         };
     }
 
@@ -195,15 +196,13 @@ export class UserService {
 
         const updatedEntry = await this.prisma.logbookEntry.update({
             where: { id: entryId },
-            data: {
-                ...entryData,
-                user: {
-                    connect: { id: userId },
-                },
-            },
+            data: { ...entryData, user: { connect: { id: userId } } },
+            include: { user: true, plan: true, crew: true },
         });
-
-        return updatedEntry;
+        return {
+            ...updatedEntry,
+            user: this.sanitizeUser(updatedEntry.user),
+        };
     }
 
     async updateLogbook(userId: number, fileSource: string, file: any) {
@@ -288,10 +287,9 @@ export class UserService {
             },
         });
 
-        const { passwordHash, ...rest } = newEntry.user;
         return {
             ...newEntry,
-            user: rest,
+            user: this.sanitizeUser(newEntry.user),
         };
     }
 
@@ -417,11 +415,53 @@ export class UserService {
                 },
             });
 
-            
-            return recording
+            return recording;
         } catch (error) {
             console.error("Error creating flight recording:", error);
             throw new Error("Failed to create flight recording");
         }
+    }
+
+    async deleteRecording(userId: number, recordingId: number) {
+        
+    }
+
+    async userFlightPlans(userId) {
+        const plans = await this.prisma.flightPlan.findMany({
+            where: { 
+                logbookEntry: {
+                    userId: userId
+                }
+             },
+        });
+        return plans;
+    }
+
+    async addFlightPlan(userId: number, data: any) {
+        if (!data) {
+            throw new Error("Invalid flight plan data");
+        }
+
+        const flightPlan = await this.prisma.flightPlan.create({
+            data: {
+                depAd: data.depAd,
+                arrAd: data.arrAd,
+                route: data.route,
+                alternate: data.alternate,
+                cruiseLevel: data.cruiseLevel,
+                cruiseSpeed: data.cruiseSpeed,
+                fuelPlan: undefined,
+                etd: data.etd ? new Date(data.etd) : null,
+                eta: data.eta ? new Date(data.eta) : null,
+                remarks: data.remarks,
+                weather: data.weather,
+
+                logbookEntry: {
+                    connect: { id: data.logbookEntryId },
+                },
+            },
+        });
+
+        return flightPlan;
     }
 }

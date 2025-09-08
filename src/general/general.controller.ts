@@ -22,4 +22,9 @@ export class GeneralController {
     getDownloadFile(@Param("id") id: string, @Res() res: Response) {
         return this.generalService.getDownloadFile(res, id);
     }
+
+    @Get("/stats")
+    getStats() {
+        return this.generalService.getStats();
+    }
 }

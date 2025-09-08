@@ -110,7 +110,7 @@ export class AuthService {
 
         return {
             accessToken: await this.jwt.signAsync(payload, {
-                expiresIn: "7d",
+                expiresIn: "3d",
                 secret,
             }),
         };

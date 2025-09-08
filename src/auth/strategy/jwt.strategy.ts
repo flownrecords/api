@@ -34,7 +34,11 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
                             crew: true,
                         },
                     },
-                    crewForEntries: true,
+                    crewForEntries: {
+                        include: {
+                            user: true,
+                        },
+                    },
                     organization: true,
                 },
             });
