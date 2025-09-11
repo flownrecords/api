@@ -360,16 +360,15 @@ export class UserService {
     }
 
     async removeCrewToLogbookEntry(
-        userId: number,
-        entryId: number,
+        entryId: number | number[],
         crewUsername: string | string[],
     ) {
+        const entryIds = Array.isArray(entryId) ? entryId : [entryId];
         const usernames = Array.isArray(crewUsername) ? crewUsername : [crewUsername];
 
+        // Find crew user IDs
         const crewUsers = await this.prisma.user.findMany({
-            where: {
-                username: { in: usernames },
-            },
+            where: { username: { in: usernames } },
             select: { id: true },
         });
 
@@ -377,17 +376,22 @@ export class UserService {
             throw new NotFoundException("No matching crew members found to remove.");
         }
 
-        const updatedEntry = await this.prisma.logbookEntry.update({
-            where: { id: entryId },
-            data: {
-                crew: {
-                    disconnect: crewUsers.map((user) => ({ id: user.id })),
+        // Disconnect crew from each entry individually
+        const updatedEntries = await Promise.all(
+            entryIds.map((id) =>
+            this.prisma.logbookEntry.update({
+                where: { id },
+                data: {
+                    crew: {
+                        disconnect: crewUsers.map((user) => ({ id: user.id })),
+                    },
                 },
-            },
-            include: { crew: true },
-        });
+                include: { crew: true },
+            })
+            )
+        );
 
-        return updatedEntry;
+        return updatedEntries;
     }
 
     async uploadRecording(userId: number, body: { entryId: number; fileSource: string }, file: Express.Multer.File) {

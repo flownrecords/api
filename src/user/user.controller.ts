@@ -91,7 +91,7 @@ export class UserController {
     @Post("logbook/crewRemove")
     removeCrewToLogbookEntry(@GetUser() user: User, @Body() body) {
         const { entryId, crewUsername } = body;
-        return this.userService.removeCrewToLogbookEntry(user.id, entryId, crewUsername);
+        return this.userService.removeCrewToLogbookEntry(entryId, crewUsername);
     }
 
     @HttpCode(HttpStatus.OK)
