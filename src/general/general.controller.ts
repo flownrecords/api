@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Req, Res } from "@nestjs/common";
+import { Controller, Get, HttpCode, HttpStatus, Param, Req, Res } from "@nestjs/common";
 import { GeneralService } from "./general.service";
 import { Request, Response } from "express";
 
@@ -28,16 +28,15 @@ export class GeneralController {
         return this.generalService.getStats();
     }
 
-    @Get("/report")
-    async getReport(@Req() req: Request, @Res() res: Response) {
-        const { hours, flights, aircraft, airport } = req.query;
-        if(!hours || !flights || !aircraft || !airport) {
-            return res.status(400).send('Missing query parameters. Required: hours, flights, aircraft, airport');
-        }
-        const report = await this.generalService.getReport({hours, flights, aircraft, airport}); // returns Buffer
+    @HttpCode(HttpStatus.OK)
+    @Get("reports/:type")
+    async generateReport(@Req() req: Request, @Res() res: Response, @Param("type") type: string) {
+        const params = req.query;
+
+        const buffer = await this.generalService.generateReport(type, params);
 
         res.setHeader('Content-Type', 'image/png');
         res.setHeader('Content-Disposition', 'inline; filename="FlownRecords-Report.png"');
-        res.send(report);
+        return res.send(buffer);
     }
 }

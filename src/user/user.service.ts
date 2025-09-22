@@ -332,6 +332,95 @@ export class UserService {
         };
     }
 
+    async getCrewLogbook(userId: number) {
+        const logbook = await this.prisma.logbookEntry.findMany({
+            where: {
+                crew: {
+                    some: { id: userId },
+                },
+            },
+            orderBy: { createdAt: "asc" },
+            include: {
+                user: true,
+                plan: true,
+                recording: false,
+                crew: {
+                    select: {
+                        id: true,
+                        username: true,
+                        firstName: true,
+                        lastName: true,
+                        profilePictureUrl: true,
+                        organizationId: true,
+                        organizationRole: true,
+                        organization: true,
+                        location: true,
+                        bio: true,
+                        publicProfile: true
+                    },
+                },
+            },
+        });
+
+        return logbook.map((entry) => {
+            return {
+                ...entry,
+                user: this.sanitizeUser(entry.user),
+            };
+        });
+    }
+
+    async getCrewEntry(userId: number, entryId: number) {
+        if (!entryId) {
+            throw new Error("Entry ID is required");
+        }
+        
+        entryId = Number(entryId);  
+        const entry = await this.prisma.logbookEntry.findFirst({
+            where: {
+                id: entryId,
+                crew: {
+                    some: { id: userId },
+                },
+            },
+            include: {
+                user: true,
+                plan: true,
+                recording: true,
+                crew: {
+                    select: {
+                        id: true,
+                        username: true,
+                        firstName: true,
+                        lastName: true,
+                        profilePictureUrl: true,
+                        organizationId: true,
+                        organizationRole: true,
+                        organization: {
+                            select: {
+                                id: true,
+                                name: true,
+                                logoUrl: true,
+                            },
+                        },
+                        location: true,
+                        bio: true,
+                        publicProfile: true
+                    },
+                },
+            },
+        });
+        
+        if (!entry) {
+            throw new NotFoundException("Logbook entry not found or you are not part of the crew");
+        }
+
+        return {
+            ...entry,
+            user: this.sanitizeUser(entry.user),
+        };
+    }
+
     async addCrewToLogbookEntry(userId: number, entryId: number, crewUsername: string | string[]) {
         const usernames = Array.isArray(crewUsername) ? crewUsername : [crewUsername];
 
@@ -427,7 +516,24 @@ export class UserService {
     }
 
     async deleteRecording(userId: number, recordingId: number) {
+        if (!recordingId) {
+            throw new Error("Recording ID is required");
+        }
         
+        const recording = await this.prisma.flightRecording.findUnique({
+            where: { id: recordingId },
+            include: {
+                logbookEntry: true,
+            },
+        });
+
+        if (!recording) {
+            throw new NotFoundException("Recording not found");
+        }
+
+        await this.prisma.flightRecording.delete({
+            where: { id: recordingId },
+        });
     }
 
     async userFlightPlans(userId) {
@@ -467,9 +573,5 @@ export class UserService {
         });
 
         return flightPlan;
-    }
-
-    async generateInstagramReport(userId: number) {
-
     }
 }

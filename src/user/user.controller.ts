@@ -4,8 +4,10 @@ import {
     Get,
     HttpCode,
     HttpStatus,
+    Param,
     Post,
     Req,
+    Res,
     UploadedFile,
     UseGuards,
     UseInterceptors,
@@ -16,6 +18,7 @@ import { JwtGuard } from "src/auth/guard";
 import { UserService } from "./user.service";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { csvFilter, kmlFilter } from "./util";
+import { Request, Response } from "express";
 
 @UseGuards(JwtGuard)
 @Controller("users")
@@ -81,6 +84,18 @@ export class UserController {
     }
 
     @HttpCode(HttpStatus.OK)
+    @Get("logbook/crew")
+    getCrewLogbook(@GetUser() user: User) {
+        return this.userService.getCrewLogbook(user.id);
+    }
+
+    @HttpCode(HttpStatus.OK)
+    @Get("logbook/crew/:id")
+    getCrewEntry(@GetUser() user: User, @Req() req) {
+        return this.userService.getCrewEntry(user.id, req.params?.id);
+    }
+
+    @HttpCode(HttpStatus.OK)
     @Post("logbook/crewAdd")
     addCrewToLogbookEntry(@GetUser() user: User, @Body() body) {
         const { entryId, crewUsername } = body;
@@ -119,6 +134,12 @@ export class UserController {
     addPlan(@GetUser() user: User, @Body() body) {
         return this.userService.addFlightPlan(user.id, body);
     }
+
+    /**
+    * 
+    * DONT ADD ENDPOINTS BELOW THIS LINE
+    * 
+    */
 
     @Get(":username")
     getUserByUsername(@Req() req) {
