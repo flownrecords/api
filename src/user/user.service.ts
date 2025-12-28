@@ -23,6 +23,12 @@ export class UserService {
             throw new Error("User ID is required");
         }
 
+        id = Number(id);
+
+        if (isNaN(id)) {
+            throw new Error("Invalid user ID");
+        }
+
         const user = await this.prisma.user.findUnique({
             where: { id },
             include: {
@@ -36,6 +42,7 @@ export class UserService {
                 organization: true,
             },
         });
+
         if (!user) {
             throw new Error("User not found");
         }

@@ -141,13 +141,14 @@ export class UserController {
     * 
     */
 
+    @Get("id/:id")
+    getUserById(@Req() req) {
+        return this.userService.getUserById(req.params?.id);
+    }
+
     @Get(":username")
     getUserByUsername(@Req() req) {
         return this.userService.getUserByUsername(req.params?.username);
     }
 
-    @Get("id/:id")
-    getUserById(@Req() req) {
-        return this.userService.getUserById(req.params?.id);
-    }
 }

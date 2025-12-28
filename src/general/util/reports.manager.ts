@@ -128,9 +128,9 @@ export class ReportsManager {
             ctx.fillText(subtext, textX, y + h + boxPadding);
         }
 
-        drawRoundedRectWithBorder(ctx as any, startX, startY, rectWidth, rectHeight, radius, '#1E1E1E', boxBorderColor, boxBorderWidth, 'Flight Hours', 'left', `${hours}h`);
+        drawRoundedRectWithBorder(ctx as any, startX, startY, rectWidth, rectHeight, radius, '#1E1E1E', boxBorderColor, boxBorderWidth, 'Flight Hours', 'left', `${hours}`);
         drawRoundedRectWithBorder(ctx as any, startX, startY + rectHeight + spacing, rectWidth, rectHeight, radius, '#1E1E1E', boxBorderColor, boxBorderWidth, 'Flights', 'right', `${flights}`);
-        drawRoundedRectWithBorder(ctx as any, startX, startY + (rectHeight + spacing) * 2, rectWidth, rectHeight, radius, '#1E1E1E', boxBorderColor, boxBorderWidth, 'Most Used Aircraft', 'left', `${aircraft}`);
+        drawRoundedRectWithBorder(ctx as any, startX, startY + (rectHeight + spacing) * 2, rectWidth, rectHeight, radius, '#1E1E1E', boxBorderColor, boxBorderWidth, 'Most Flown Aircraft', 'left', `${aircraft}`);
         drawRoundedRectWithBorder(ctx as any, startX, startY + (rectHeight + spacing) * 3, rectWidth, rectHeight, radius, '#1E1E1E', boxBorderColor, boxBorderWidth, 'Most Visited Airport', 'right', `${airport}`);
 
         ctx.fillStyle = '#fff';
